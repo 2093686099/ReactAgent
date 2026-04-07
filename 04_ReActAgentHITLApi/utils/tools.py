@@ -38,9 +38,9 @@ logger.addHandler(handler)
 # [LangChain 1.x 迁移] 工具直接返回，不再包装 HITL 中断逻辑
 async def get_tools():
     # 自定义工具 模拟酒店预定工具
-    @tool(“book_hotel”, description=”酒店预定工具”)
+    @tool("book_hotel", description="酒店预定工具")
     async def book_hotel(hotel_name: str):
-        “””
+        """
        支持酒店预定的工具
 
         Args:
@@ -48,13 +48,13 @@ async def get_tools():
 
         Returns:
             工具的调用结果
-        “””
-        return f”成功预定了在{hotel_name}的住宿。”
+        """
+        return f"成功预定了在{hotel_name}的住宿。"
 
     # 自定义工具 计算两个数的乘积的工具
-    @tool(“multiply”, description=”计算两个数的乘积的工具”)
+    @tool("multiply", description="计算两个数的乘积的工具")
     async def multiply(a: float, b: float) -> float:
-        “””
+        """
        支持计算两个数的乘积的工具
 
         Args:
@@ -63,20 +63,20 @@ async def get_tools():
 
         Returns:
             工具的调用结果
-        “””
+        """
         result = a * b
-        return f”{a}乘以{b}等于{result}。”
+        return f"{a}乘以{b}等于{result}。"
 
     # MCP Server工具 高德地图
     client = MultiServerMCPClient({
         # 高德地图 MCP Server
-        # “amap-amap-sse”: {
-        #     “url”: “https://mcp.amap.com/sse?key=”+os.getenv(“AMAP_MAPS_API_KEY”),
-        #     “transport”: “sse”,
+        # "amap-amap-sse": {
+        #     "url": "https://mcp.amap.com/sse?key="+os.getenv("AMAP_MAPS_API_KEY"),
+        #     "transport": "sse",
         # },
-        “amap-maps-streamableHTTP”: {
-            “url”: “https://mcp.amap.com/mcp?key=” + os.getenv(“AMAP_MAPS_API_KEY”),
-            “transport”: “streamable_http”
+        "amap-maps-streamableHTTP": {
+            "url": "https://mcp.amap.com/mcp?key=" + os.getenv("AMAP_MAPS_API_KEY"),
+            "transport": "streamable_http"
         }
     })
     # 从MCP Server中获取可提供使用的全部工具
@@ -93,8 +93,8 @@ async def get_tools():
 
 
 def get_hitl_config(tools):
-    “””构建 HITL 中间件配置：指定哪些工具需要人工审查”””
+    """构建 HITL 中间件配置：指定哪些工具需要人工审查"""
     # [LangChain 1.x 迁移] 默认所有工具需要审查，multiply 除外
     interrupt_on = {t.name: True for t in tools}
-    interrupt_on[“multiply”] = False  # multiply 不需要人工审查
+    interrupt_on["multiply"] = False  # multiply 不需要人工审查
     return interrupt_on
