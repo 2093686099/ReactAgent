@@ -15,10 +15,11 @@ This is a progressive teaching project that builds a production-grade ReAct Agen
 
 ## Tech Stack
 
-- **Agent Framework**: LangGraph (`create_react_agent`) + LangChain
+- **Agent Framework**: LangChain `create_agent` + LangGraph runtime (migrated from `create_react_agent`)
 - **LLM Providers**: Qwen (DashScope), OpenAI, OneAPI, Ollama — configured via `utils/config.py` `LLM_TYPE`
 - **MCP**: `langchain-mcp-adapters` for Amap (Gaode Maps) MCP Server integration
-- **HITL**: LangGraph `interrupt()` / `Command(resume=...)` pattern
+- **HITL**: `HumanInTheLoopMiddleware` declarative middleware + `Command(resume=...)` (migrated from manual `interrupt()` wrapping)
+- **Middleware**: `@before_model` for message trimming (migrated from `pre_model_hook`)
 - **Memory**: PostgreSQL via `AsyncPostgresSaver` (short-term checkpointer) and `AsyncPostgresStore` (long-term cross-session)
 - **Session Management**: Redis (async) with TTL-based expiration
 - **API**: FastAPI backend, Rich-based CLI frontend using `requests`
@@ -60,19 +61,15 @@ Rich-based CLI that calls backend API via `requests`. Handles HITL interaction l
 ### Utils Module (`utils/`)
 - `config.py` — All configuration: DB_URI, Redis, LLM_TYPE, ports, timeouts
 - `llms.py` — `initialize_llm()` returns `(ChatOpenAI, OpenAIEmbeddings)` based on LLM_TYPE
-- `tools.py` — `get_tools()` loads MCP tools + custom tools, wraps with HITL
+- `tools.py` — `get_tools()` loads MCP tools + custom tools; `get_hitl_config()` builds HITL middleware config
 - `models.py` (05/06) — Pydantic request/response models
 - `redis.py` (05/06) — `RedisSessionManager` for session CRUD with TTL
 - `tasks.py` (06) — Celery task definitions for async agent execution
 
 ### HITL Flow
-1. Agent calls tool → `interrupt()` pauses graph execution
+1. Agent calls tool → `HumanInTheLoopMiddleware` intercepts based on `interrupt_on` config
 2. Backend returns `interrupted` status with tool call details
-3. Frontend prompts user for one of 4 response types:
-   - `accept` — proceed with original args
-   - `edit` — modify tool args (user provides new JSON)
-   - `response` — skip tool, inject custom result
-   - `reject` — cancel tool call
+3. Frontend prompts user for response (approve/edit/reject)
 4. Frontend sends choice to `POST /agent/resume`
 5. Backend uses `Command(resume=...)` to continue graph
 
@@ -99,4 +96,4 @@ Rich-based CLI that calls backend API via `requests`. Handles HITL interaction l
 conda create -n ReActAgents python=3.11
 ```
 
-Pin versions matter — see each directory's README for exact versions. Key: `langgraph==0.4.5`, `langchain==0.3.25`, `langchain-openai==0.3.17`.
+Pin versions matter — see each directory's README for exact versions. Key: `langgraph==1.1.6`, `langchain==1.2.15`, `langchain-openai==1.1.12`, `langgraph-checkpoint-postgres==3.0.5`.
