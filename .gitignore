@@ -19,6 +19,8 @@ Thumbs.db
 # Environment
 .env
 *.log
+.venv/
+venv/
 
 # Project specific
 logfile/
