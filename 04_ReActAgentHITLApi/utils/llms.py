@@ -53,12 +53,18 @@ MODEL_CONFIGS = {
         "api_key": "ollama",
         "chat_model": "llama3.1:8b",
         "embedding_model": "nomic-embed-text:latest"
+    },
+    "modelscope": {
+        "base_url": "https://api-inference.modelscope.cn/v1",
+        "api_key": "ms-72446726-a003-4697-a498-c3d55ca717c2",
+        "chat_model": "MiniMax/MiniMax-M2.5",
+        "embedding_model": "BAAI/bge-m3"
     }
 }
 
 
 # 默认配置
-DEFAULT_LLM_TYPE = "qwen"
+DEFAULT_LLM_TYPE = "modelscope"
 DEFAULT_TEMPERATURE = 0
 
 

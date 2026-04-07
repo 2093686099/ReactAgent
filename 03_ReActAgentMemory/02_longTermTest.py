@@ -17,10 +17,10 @@ from langgraph.store.postgres import AsyncPostgresStore
 
 # LangChain 1.x 迁移: 使用 ChatOpenAI 替代 init_chat_model
 llm = ChatOpenAI(
-    model="deepseek-chat",
+    model="MiniMax/MiniMax-M2.5",
     temperature=0,
-    base_url="https://api.deepseek.com/v1",
-    api_key=os.getenv("DEEPSEEK_API_KEY")
+    base_url="https://api-inference.modelscope.cn/v1",
+    api_key="ms-72446726-a003-4697-a498-c3d55ca717c2",
 )
 
 
