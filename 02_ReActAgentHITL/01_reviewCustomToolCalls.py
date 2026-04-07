@@ -12,14 +12,16 @@ from langchain.agents.middleware import HumanInTheLoopMiddleware
 from typing import List, Any
 # [LangChain 1.x 迁移] Command 仍然用于 resume 人工反馈
 from langgraph.types import Command
+from dotenv import load_dotenv
 
+load_dotenv()
 
 # [LangChain 1.x 迁移] 使用 ChatOpenAI 直接初始化大模型
 llm = ChatOpenAI(
     model="MiniMax/MiniMax-M2.5",
     temperature=0,
     base_url="https://api-inference.modelscope.cn/v1",
-    api_key="ms-72446726-a003-4697-a498-c3d55ca717c2",
+    api_key=os.getenv("MODELSCOPE_API_KEY"),
 )
 
 

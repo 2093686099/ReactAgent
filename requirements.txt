@@ -16,6 +16,9 @@ uvicorn
 redis==6.2.0
 rich==14.0.0
 
+# 环境变量
+python-dotenv
+
 # 日志
 concurrent-log-handler==0.9.28
 

@@ -8,14 +8,16 @@ from langchain_core.messages import SystemMessage, HumanMessage
 # 迁移: init_chat_model 已弃用，改用 langchain_openai 中的 ChatOpenAI
 from langchain_openai import ChatOpenAI
 from typing import Dict, List, Any
+from dotenv import load_dotenv
 
+load_dotenv()
 
 # 迁移: 使用 ChatOpenAI 替代 init_chat_model，接口参数保持一致
 llm = ChatOpenAI(
     model="MiniMax/MiniMax-M2.5",
     temperature=0,
     base_url="https://api-inference.modelscope.cn/v1",
-    api_key="ms-72446726-a003-4697-a498-c3d55ca717c2",
+    api_key=os.getenv("MODELSCOPE_API_KEY"),
 )
 
 

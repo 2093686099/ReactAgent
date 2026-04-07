@@ -56,7 +56,7 @@ MODEL_CONFIGS = {
     },
     "modelscope": {
         "base_url": "https://api-inference.modelscope.cn/v1",
-        "api_key": "ms-72446726-a003-4697-a498-c3d55ca717c2",
+        "api_key": os.getenv("MODELSCOPE_API_KEY"),
         "chat_model": "MiniMax/MiniMax-M2.5",
         "embedding_model": "BAAI/bge-m3"
     }
