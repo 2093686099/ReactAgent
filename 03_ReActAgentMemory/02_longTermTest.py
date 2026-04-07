@@ -150,7 +150,7 @@ async def run_agent():
     ))
 
     # 基于数据库持久化存储的short-term
-    db_uri = "postgresql://kevin:123456@localhost:5432/postgres?sslmode=disable"
+    db_uri = os.getenv("DB_URI", "postgresql://postgres:password@localhost:5432/neuron_ai_assistant?sslmode=disable")
 
     # short-term短期记忆 实例化PostgresSaver对象 并初始化checkpointer
     # long-term长期记忆 实例化PostgresStore对象 并初始化store

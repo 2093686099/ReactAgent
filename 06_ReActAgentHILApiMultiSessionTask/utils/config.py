@@ -11,7 +11,7 @@ class Config:
     BACKUP_COUNT = 3
 
     # PostgreSQL数据库配置参数
-    DB_URI = os.getenv("DB_URI", "postgresql://kevin:123456@localhost:5432/postgres?sslmode=disable")
+    DB_URI = os.getenv("DB_URI", "postgresql://postgres:password@localhost:5432/neuron_ai_assistant?sslmode=disable")
     MIN_SIZE = 5
     MAX_SIZE = 10
 
