@@ -1,0 +1,23 @@
+# ReActAgents 项目依赖
+# LangGraph v1.x + LangChain v1.x (2026-04 升级)
+
+# 核心框架
+langgraph==1.1.6
+langchain==1.2.15
+langchain-openai==1.1.12
+langgraph-checkpoint-postgres==3.0.5
+
+# MCP 集成
+langchain-mcp-adapters
+
+# API 服务 (04-06)
+fastapi==0.115.12
+uvicorn
+redis==6.2.0
+rich==14.0.0
+
+# 日志
+concurrent-log-handler==0.9.28
+
+# 异步任务队列 (06)
+celery==5.5.3
