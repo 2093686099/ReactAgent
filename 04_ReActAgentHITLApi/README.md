@@ -2,7 +2,7 @@
 
 ## 1.1 主要内容
 - 使用FastAPI框架实现对外提供Agent智能体API后端接口服务
-- 使用LangGraph中预置的ReAct架构的Agent
+- 使用LangChain 1.x的create_agent + HumanInTheLoopMiddleware中间件构建Agent
 - 支持Short-term（短期记忆）并使用PostgreSQL进行持久化存储
 - 支持Function Calling，包含自定义工具和MCP Server提供的工具
 - 支持Human in the loop（HITL 人工审查）对工具调用提供人工审查功能，支持四种审查类型  
@@ -27,13 +27,13 @@
 
 # 2、安装项目依赖
 ```bash
-pip install langgraph==0.4.5 
-pip install langchain==0.3.25
-pip install langchain-openai==0.3.17
-pip install langgraph-checkpoint-postgres==2.0.21
+pip install langgraph==1.1.6
+pip install langchain==1.2.15
+pip install langchain-openai==1.1.12
+pip install langgraph-checkpoint-postgres==3.0.5
 pip install rich==14.0.0
 pip install fastapi==0.115.12
-pip install redis==6.2.0 
+pip install redis==6.2.0
 pip install concurrent-log-handler==0.9.28
 ```
 

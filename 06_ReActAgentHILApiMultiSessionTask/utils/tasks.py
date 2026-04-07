@@ -5,17 +5,19 @@ from concurrent_log_handler import ConcurrentRotatingFileHandler
 from typing import Dict, Any, Optional, List
 from celery import Celery
 import time
-from langgraph.prebuilt import create_react_agent
+# [LangChain 1.x 迁移] 替换 create_react_agent 为 create_agent，新增中间件导入
+from langchain.agents import create_agent
+from langchain.agents.middleware import HumanInTheLoopMiddleware, before_model
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.store.postgres import AsyncPostgresStore
 from psycopg_pool import AsyncConnectionPool
 from langchain_core.messages.utils import trim_messages
 from .config import Config
 from .llms import get_llm
-from .tools import get_tools
+from .tools import get_tools, get_hitl_config
 from .models import AgentResponse
 from .redis import RedisSessionManager, get_session_manager
-from langgraph.types import interrupt, Command
+from langgraph.types import Command
 
 
 # 设置日志基本配置，级别为DEBUG或INFO
@@ -63,13 +65,16 @@ celery_app.conf.update(
 )
 
 
+# [LangChain 1.x 迁移] 使用 @before_model 装饰器替代 pre_model_hook 参数
 # 针对短期记忆修剪聊天历史消息 限制消息的token数量
-def trimmed_messages_hook(state):
+@before_model
+def trimmed_messages_hook(state, runtime):
     """
     修剪聊天历史消息，限制消息的 token 数量
 
     Args:
         state: 包含消息的字典，通常包含 "messages" 键
+        runtime: 运行时上下文信息
 
     Returns:
         dict: 包含修剪后消息的字典，键为 "llm_input_messages"
@@ -364,11 +369,14 @@ def invoke_agent_task(user_id: str, session_id: str, task_id: str, query: str, s
                 # 获取工具列表
                 tools = await get_tools()
 
-                # 创建ReAct智能体
-                agent = create_react_agent(
+                # [LangChain 1.x 迁移] 使用 create_agent 替代 create_react_agent
+                # 使用 middleware 列表替代 pre_model_hook 参数
+                # 通过 HumanInTheLoopMiddleware 统一配置HITL中断
+                interrupt_on = get_hitl_config(tools)
+                agent = create_agent(
                     model=llm_chat,
                     tools=tools,
-                    pre_model_hook=trimmed_messages_hook,
+                    middleware=[trimmed_messages_hook, HumanInTheLoopMiddleware(interrupt_on=interrupt_on)],
                     checkpointer=checkpointer,
                     store=store
                 )
@@ -489,11 +497,14 @@ def resume_agent_task(user_id: str, session_id: str, task_id: str, command_data:
                 # 获取工具列表
                 tools = await get_tools()
 
-                # 创建ReAct智能体
-                agent = create_react_agent(
+                # [LangChain 1.x 迁移] 使用 create_agent 替代 create_react_agent
+                # 使用 middleware 列表替代 pre_model_hook 参数
+                # 通过 HumanInTheLoopMiddleware 统一配置HITL中断
+                interrupt_on = get_hitl_config(tools)
+                agent = create_agent(
                     model=llm_chat,
                     tools=tools,
-                    pre_model_hook=trimmed_messages_hook,
+                    middleware=[trimmed_messages_hook, HumanInTheLoopMiddleware(interrupt_on=interrupt_on)],
                     checkpointer=checkpointer,
                     store=store
                 )

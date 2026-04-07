@@ -80,10 +80,10 @@ conda create -n ReActAgents python=3.11
 
 ```bash
 # 安装项目依赖
-pip install langgraph==0.4.5
-pip install langchain==0.3.25
-pip install langchain-openai==0.3.17
-pip install langgraph-checkpoint-postgres==2.0.21
+pip install langgraph==1.1.6
+pip install langchain==1.2.15
+pip install langchain-openai==1.1.12
+pip install langgraph-checkpoint-postgres==3.0.5
 pip install rich==14.0.0
 pip install fastapi==0.115.12
 pip install redis==6.2.0
