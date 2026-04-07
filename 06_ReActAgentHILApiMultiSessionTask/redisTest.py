@@ -31,8 +31,8 @@ class RedisSessionManager:
 
     # 关闭 Redis 连接
     async def close(self):
-        # 异步关闭 Redis 客户端连接
-        await self.redis_client.close()
+        # [LangChain 1.x] redis 5.x 中 close() 已废弃，改用 aclose()
+        await self.redis_client.aclose()
 
     # 创建指定用户的新会话
     # 存储结构：session:{user_id}:{session_id}:{task_id} = {

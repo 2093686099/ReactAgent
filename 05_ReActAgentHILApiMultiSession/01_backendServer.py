@@ -8,8 +8,10 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 import uuid
-from langgraph.types import interrupt, Command
-from langgraph.prebuilt import create_react_agent
+# [LangChain 1.x 迁移] 使用 create_agent 替代 create_react_agent，使用 HumanInTheLoopMiddleware + before_model 替代手动 interrupt 包装
+from langgraph.types import Command
+from langchain.agents import create_agent
+from langchain.agents.middleware import HumanInTheLoopMiddleware, before_model
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.store.postgres import AsyncPostgresStore
 from langchain_core.messages.utils import count_tokens_approximately, trim_messages
@@ -21,7 +23,8 @@ from datetime import timedelta, datetime
 from psycopg_pool import AsyncConnectionPool
 from utils.config import Config
 from utils.llms import get_llm
-from utils.tools import get_tools
+# [LangChain 1.x 迁移] 新增导入 get_hitl_config 用于构建中间件配置
+from utils.tools import get_tools, get_hitl_config
 
 
 # 设置日志基本配置，级别为DEBUG或INFO
@@ -143,8 +146,8 @@ class RedisSessionManager:
 
     # 关闭 Redis 连接
     async def close(self):
-        # 异步关闭 Redis 客户端连接
-        await self.redis_client.close()
+        # [LangChain 1.x] redis 5.x 中 close() 已废弃，改用 aclose()
+        await self.redis_client.aclose()
 
     # 创建指定用户的新会话
     # 存储结构：session:{user_id}:{session_id} = {
@@ -500,7 +503,9 @@ async def process_agent_result(
     return response
 
 # 修剪聊天历史以满足 token 数量或消息数量的限制
-def trimmed_messages_hook(state):
+# [LangChain 1.x 迁移] 使用 @before_model 装饰器替代 pre_model_hook 参数
+@before_model
+def trimmed_messages_hook(state, runtime):
     trimmed_messages = trim_messages(
         messages=state["messages"],
         max_tokens=20,
@@ -638,11 +643,15 @@ async def lifespan(app: FastAPI):
             # 获取工具列表
             tools = await get_tools()
 
-            # 创建ReAct Agent 并存储为单实例
-            app.state.agent = create_react_agent(
+            # [LangChain 1.x 迁移] 使用 create_agent + middleware 列表替代 create_react_agent + pre_model_hook
+            interrupt_on = get_hitl_config(tools)
+            app.state.agent = create_agent(
                 model=llm_chat,
                 tools=tools,
-                pre_model_hook=trimmed_messages_hook,
+                middleware=[
+                    trimmed_messages_hook,
+                    HumanInTheLoopMiddleware(interrupt_on=interrupt_on)
+                ],
                 checkpointer=app.state.checkpointer,
                 store=app.state.store
             )

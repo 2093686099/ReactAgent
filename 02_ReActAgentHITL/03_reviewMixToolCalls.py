@@ -3,19 +3,20 @@ import asyncio
 from langchain_core.tools import tool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.prebuilt import create_react_agent
+# [LangChain 1.x 迁移] 使用 create_agent 替代 create_react_agent
+from langchain.agents import create_agent
 from langchain_core.messages import SystemMessage, HumanMessage
-from langchain.chat_models import init_chat_model
-from typing import Dict, List, Any
-from typing import Callable
-from langchain_core.tools import BaseTool, tool as create_tool
-from langgraph.prebuilt.interrupt import HumanInterruptConfig, HumanInterrupt
-from langchain_core.runnables import RunnableConfig
-from langgraph.types import interrupt, Command
+# [LangChain 1.x 迁移] 使用 ChatOpenAI 替代 init_chat_model
+from langchain_openai import ChatOpenAI
+# [LangChain 1.x 迁移] 使用中间件替代手动 interrupt 包装函数
+from langchain.agents.middleware import HumanInTheLoopMiddleware
+from typing import List, Any
+# [LangChain 1.x 迁移] Command 仍然用于 resume 人工反馈
+from langgraph.types import Command
 
 
-# 使用langgraph推荐方式定义大模型
-llm = init_chat_model(
+# [LangChain 1.x 迁移] 使用 ChatOpenAI 直接初始化大模型
+llm = ChatOpenAI(
     model="deepseek-chat",
     temperature=0,
     base_url="https://api.deepseek.com/v1",
@@ -23,73 +24,8 @@ llm = init_chat_model(
 )
 
 
-# 定义一个函数，用于为工具添加人工审查（human-in-the-loop）功能
-# 参数：tool（可调用对象或 BaseTool 对象），interrupt_config（可选的人工中断配置）
-# 返回：一个带有人工审查功能的 BaseTool 对象
-async def add_human_in_the_loop(
-        tool: Callable | BaseTool,
-        *,
-        interrupt_config: HumanInterruptConfig = None,
-) -> BaseTool:
-    """Wrap a tool to support human-in-the-loop review."""
-
-    # 检查传入的工具是否为 BaseTool 的实例
-    if not isinstance(tool, BaseTool):
-        # 如果不是 BaseTool，则将可调用对象转换为 BaseTool 对象
-        tool = create_tool(tool)
-
-    # 检查是否提供了 interrupt_config 参数
-    if interrupt_config is None:
-        # 如果未提供，则设置默认的人工中断配置，允许接受、编辑和响应
-        interrupt_config = {
-            "allow_accept": True,
-            "allow_edit": True,
-            "allow_respond": True,
-        }
-
-    # 使用 create_tool 装饰器定义一个新的工具函数，继承原工具的名称、描述和参数模式
-    @create_tool(
-        tool.name,
-        description=tool.description,
-        args_schema=tool.args_schema
-    )
-    # 定义内部函数，用于处理带有中断逻辑的工具调用
-    async def call_tool_with_interrupt(config: RunnableConfig, **tool_input):
-        # 创建一个人为中断请求，包含工具名称、输入参数和配置
-        request: HumanInterrupt = {
-            "action_request": {
-                "action": tool.name,
-                "args": tool_input
-            },
-            "config": interrupt_config,
-            "description": "Please review the tool call"
-        }
-        # 调用 interrupt 函数，获取人工审查的响应（取第一个响应）
-        response = interrupt([request])[0]
-        # 检查响应类型是否为“接受”（accept）
-        if response["type"] == "accept":
-            # 如果接受，直接调用原始工具并传入输入参数和配置
-            tool_response = await tool.ainvoke(tool_input, config)
-        # 检查响应类型是否为“编辑”（edit）
-        elif response["type"] == "edit":
-            # 如果是编辑，更新工具输入参数为响应中提供的参数
-            tool_input = response["args"]["args"]
-            # 使用更新后的参数调用原始工具
-            tool_response = await tool.ainvoke(tool_input, config)
-        # 检查响应类型是否为“响应”（response）
-        elif response["type"] == "response":
-            # 如果是响应，直接将用户反馈作为工具的响应
-            user_feedback = response["args"]
-            tool_response = user_feedback
-        # 如果响应类型不被支持，则抛出异常
-        else:
-            raise ValueError(f"Unsupported interrupt response type: {response['type']}")
-
-        # 返回工具的响应结果
-        return tool_response
-
-    # 返回包装后的工具函数
-    return call_tool_with_interrupt
+# [LangChain 1.x 迁移] 删除了 add_human_in_the_loop 函数
+# 在 1.x 中，HITL 通过 HumanInTheLoopMiddleware 中间件实现，无需手动包装工具
 
 
 # @tool("book_hotel",description="提供预订酒店的工具")
@@ -194,17 +130,13 @@ async def run_agent():
         }
     })
 
-    # 从MCP Server中获取可提供使用的全部工具
-    # MCP Client 能够动态感知工具的变化
+    # [LangChain 1.x 迁移] 直接获取MCP工具并合并自定义工具，不再需要 add_human_in_the_loop 包装
+    # HITL 通过 middleware 参数中的 HumanInTheLoopMiddleware 配置
     all_tools = await client.get_tools()
-    # tools = [await add_human_in_the_loop(all_tools[6])]
-    # print(f"tools:{all_tools[6]}\n")
-
-    tools = [await add_human_in_the_loop(index) for index in all_tools]
-    # # 追加工具并为工具添加human feedback
-    tools.append(book_hotel)
-    # tools = [book_hotel]
-    # print(f"tools:{tools}\n")
+    tools = all_tools + [book_hotel]
+    # 只有MCP工具需要人工审查，book_hotel 不需要（保持原有行为）
+    interrupt_on = {t.name: True for t in all_tools}
+    interrupt_on["book_hotel"] = False
 
     # 基于内存存储的short-term
     checkpointer = InMemorySaver()
@@ -214,11 +146,15 @@ async def run_agent():
         "你是一个AI助手。"
     ))
 
-    # 创建ReAct风格的agent
-    agent = create_react_agent(
+    # [LangChain 1.x 迁移] 使用 create_agent 替代 create_react_agent
+    # middleware 参数配置哪些工具需要人工审查
+    agent = create_agent(
         model=llm,
         tools=tools,
-        prompt=system_message,
+        system_prompt=system_message,
+        middleware=[
+            HumanInTheLoopMiddleware(interrupt_on=interrupt_on)
+        ],
         checkpointer=checkpointer
     )
 

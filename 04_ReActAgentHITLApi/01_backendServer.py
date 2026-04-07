@@ -8,8 +8,10 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 import uuid
-from langgraph.types import interrupt, Command
-from langgraph.prebuilt import create_react_agent
+# [LangChain 1.x 迁移] 使用 create_agent 替代 create_react_agent，使用 HumanInTheLoopMiddleware 替代手动 interrupt 包装
+from langgraph.types import Command
+from langchain.agents import create_agent
+from langchain.agents.middleware import HumanInTheLoopMiddleware
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 import uvicorn
 from contextlib import asynccontextmanager
@@ -19,7 +21,8 @@ from datetime import timedelta
 from psycopg_pool import AsyncConnectionPool
 from utils.config import Config
 from utils.llms import get_llm
-from utils.tools import get_tools
+# [LangChain 1.x 迁移] 新增导入 get_hitl_config 用于构建中间件配置
+from utils.tools import get_tools, get_hitl_config
 
 
 # 设置日志基本配置，级别为DEBUG或INFO
@@ -119,7 +122,8 @@ class RedisSessionManager:
 
     # 关闭 Redis 连接
     async def close(self):
-        await self.redis_client.close()
+        # [LangChain 1.x] redis 5.x 中 close() 已废弃，改用 aclose()
+        await self.redis_client.aclose()
 
     # 创建新会话，匹配指定数据结构
     # 会话存储 - 保存每个用户的智能体实例和状态
@@ -374,10 +378,16 @@ async def lifespan(app: FastAPI):
             # 获取工具列表
             tools = await get_tools()
 
-            # 创建ReAct Agent 并存储为单实例
-            app.state.agent = create_react_agent(
+            # [LangChain 1.x 迁移] 构建 HITL 中间件配置，指定哪些工具需要人工审查
+            interrupt_on = get_hitl_config(tools)
+
+            # [LangChain 1.x 迁移] 使用 create_agent + HumanInTheLoopMiddleware 替代 create_react_agent + 手动 interrupt 包装
+            app.state.agent = create_agent(
                 model=llm_chat,
                 tools=tools,
+                middleware=[
+                    HumanInTheLoopMiddleware(interrupt_on=interrupt_on)
+                ],
                 checkpointer=checkpointer
             )
             logger.info("Agent初始化成功")

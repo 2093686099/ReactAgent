@@ -1,15 +1,17 @@
 import os
 import asyncio
 from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.prebuilt import create_react_agent
+# 迁移: create_react_agent 已移至 langchain.agents，更名为 create_agent
+from langchain.agents import create_agent
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_core.messages import SystemMessage, HumanMessage
-from langchain.chat_models import init_chat_model
+# 迁移: init_chat_model 已弃用，改用 langchain_openai 中的 ChatOpenAI
+from langchain_openai import ChatOpenAI
 from typing import Dict, List, Any
 
 
-# 使用langgraph推荐方式定义大模型
-llm = init_chat_model(
+# 迁移: 使用 ChatOpenAI 替代 init_chat_model，接口参数保持一致
+llm = ChatOpenAI(
     model="deepseek-chat",
     temperature=0,
     base_url="https://api.deepseek.com/v1",
@@ -125,11 +127,11 @@ async def run_agent():
         "你是一个AI助手，使用高德地图工具获取信息。"
     ))
 
-    # 创建ReAct风格的agent
-    agent = create_react_agent(
+    # 迁移: create_react_agent 更名为 create_agent，prompt 参数更名为 system_prompt
+    agent = create_agent(
         model=llm,
         tools=tools,
-        prompt=system_message,
+        system_prompt=system_message,
         checkpointer=checkpointer
     )
 

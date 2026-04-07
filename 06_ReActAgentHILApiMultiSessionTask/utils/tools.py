@@ -1,11 +1,8 @@
 import os
 import logging
 from concurrent_log_handler import ConcurrentRotatingFileHandler
-from typing import Callable
-from langchain_core.tools import BaseTool, tool as create_tool
-from langchain_core.runnables import RunnableConfig
-from langgraph.prebuilt.interrupt import HumanInterruptConfig, HumanInterrupt
-from langgraph.types import interrupt, Command
+# [LangChain 1.x 迁移] 移除了HITL相关导入（HumanInterruptConfig, HumanInterrupt, interrupt, RunnableConfig, BaseTool, create_tool, Callable）
+# HITL功能现在通过 HumanInTheLoopMiddleware 在 agent 创建时统一配置
 from langchain_core.tools import tool
 from .config import Config
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -34,91 +31,9 @@ handler.setFormatter(logging.Formatter(
 logger.addHandler(handler)
 
 
-# 为工具添加人工审查（human-in-the-loop）功能
-async def add_human_in_the_loop(
-        tool: Callable | BaseTool,
-        *,
-        interrupt_config: HumanInterruptConfig = None,
-) -> BaseTool:
-    """
-    为工具添加人工审查（human-in-the-loop）
-
-    Args:
-        tool: 可调用对象或 BaseTool 对象
-        interrupt_config: 可选的人工中断配置
-
-    Returns:
-        BaseTool: 一个带有人工审查功能的 BaseTool 对象
-    """
-    # 检查传入的工具是否为 BaseTool 的实例
-    if not isinstance(tool, BaseTool):
-        # 如果不是 BaseTool，则将可调用对象转换为 BaseTool 对象
-        tool = create_tool(tool)
-
-    # 使用 create_tool 装饰器定义一个新的工具函数，继承原工具的名称、描述和参数模式
-    @create_tool(
-        tool.name,
-        description=tool.description,
-        args_schema=tool.args_schema
-    )
-    # 定义内部函数，用于处理带有中断逻辑的工具调用
-    async def call_tool_with_interrupt(config: RunnableConfig, **tool_input):
-        # 创建一个人为中断请求，包含工具名称、输入参数和配置
-        request: HumanInterrupt = {
-            "action_request": {
-                "action": tool.name,
-                "args": tool_input
-            },
-            "config": interrupt_config,
-            "description": f"准备调用 {tool.name} 工具：\n- 参数为: {tool_input}\n\n是否允许继续？\n输入 'yes' 接受工具调用\n输入 'no' 拒绝工具调用\n输入 'edit' 修改工具参数后调用工具\n输入 'response' 不调用工具直接反馈信息",
-        }
-        # 调用 interrupt 函数，获取人工审查的响应（取第一个响应）
-        response = interrupt(request)
-        logger.info(f"response: {response}")
-
-        # 检查响应类型是否为“接受”（accept）
-        if response["type"] == "accept":
-            logger.info("工具调用已批准，执行中...")
-            logger.info(f"调用工具: {tool.name}, 参数: {tool_input}")
-            try:
-                # 如果接受，直接调用原始工具并传入输入参数
-                tool_response = await tool.ainvoke(input=tool_input)
-                logger.info(tool_response)
-            except Exception as e:
-                logger.error(f"工具调用失败: {e}")
-
-        # 检查响应类型是否为“编辑”（edit）
-        elif response["type"] == "edit":
-            # 如果是编辑，更新工具输入参数为响应中提供的参数
-            tool_input = response["args"]["args"]
-            try:
-                # 使用更新后的参数调用原始工具
-                tool_response = await tool.ainvoke(input=tool_input)
-                logger.info(tool_response)
-            except Exception as e:
-                logger.error(f"工具调用失败: {e}")
-
-        # 检查响应类型是否为“拒绝”（reject）
-        elif response["type"] == "reject":
-            logger.info("工具调用被拒绝，等待用户输入...")
-            # 直接将用户反馈作为工具的响应
-            tool_response = '该工具被拒绝使用，请尝试其他方法或拒绝回答问题。'
-
-        # 检查响应类型是否为“响应”（response）
-        elif response["type"] == "response":
-            # 如果是响应，直接将用户反馈作为工具的响应
-            user_feedback = response["args"]
-            tool_response = user_feedback
-
-        else:
-            raise ValueError(f"Unsupported interrupt response type: {response['type']}")
-
-        return tool_response
-
-    return call_tool_with_interrupt
-
-
 # 获取工具列表 提供给第三方调用
+# [LangChain 1.x 迁移] 移除了 add_human_in_the_loop() 函数
+# HITL功能现在通过 HumanInTheLoopMiddleware 中间件在 agent 创建时统一配置
 async def get_tools():
     # 自定义工具 模拟酒店预定工具
     @tool("book_hotel", description="酒店预定工具")
@@ -164,12 +79,37 @@ async def get_tools():
     })
     # 从MCP Server中获取可提供使用的全部工具
     amap_tools = await client.get_tools()
-    # 为工具添加人工审查
-    tools = [await add_human_in_the_loop(index) for index in amap_tools]
 
-    # 追加自定义工具并添加人工审查
-    tools.append(await add_human_in_the_loop(book_hotel))
+    # [LangChain 1.x 迁移] 工具列表不再包裹HITL，直接返回原始工具
+    # HITL通过 HumanInTheLoopMiddleware 在 agent 创建时统一配置
+    tools = list(amap_tools)
+
+    # 追加自定义工具（不再包裹HITL）
+    tools.append(book_hotel)
     tools.append(multiply)
 
     # 返回工具列表
     return tools
+
+
+# [LangChain 1.x 迁移] 新增 get_hitl_config 函数
+# 返回每个工具是否需要HITL中断的配置字典，供 HumanInTheLoopMiddleware 使用
+def get_hitl_config(tools):
+    """
+    根据工具列表生成HITL中断配置
+
+    Args:
+        tools: 工具列表
+
+    Returns:
+        dict: 每个工具名称对应是否需要中断的配置字典
+              multiply 工具不需要中断（False），其余工具需要中断（True）
+    """
+    interrupt_on = {}
+    for t in tools:
+        tool_name = getattr(t, "name", str(t))
+        if tool_name == "multiply":
+            interrupt_on[tool_name] = False
+        else:
+            interrupt_on[tool_name] = True
+    return interrupt_on

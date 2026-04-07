@@ -3,14 +3,18 @@ import sys
 import asyncio
 from langchain_core.tools import tool
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from langgraph.prebuilt import create_react_agent
+# LangChain 1.x 迁移: create_react_agent → create_agent
+from langchain.agents import create_agent
 from langchain_core.messages import SystemMessage, HumanMessage
-from langchain.chat_models import init_chat_model
+# LangChain 1.x 迁移: init_chat_model → ChatOpenAI
+from langchain_openai import ChatOpenAI
+# LangChain 1.x 迁移: pre_model_hook → before_model 中间件装饰器
+from langchain.agents.middleware import before_model
 from typing import Dict, List, Any
 from langchain_core.messages.utils import count_tokens_approximately, trim_messages
 
-# 使用langgraph推荐方式定义大模型
-llm = init_chat_model(
+# LangChain 1.x 迁移: 使用 ChatOpenAI 替代 init_chat_model
+llm = ChatOpenAI(
     model="deepseek-chat",
     temperature=0,
     base_url="https://api.deepseek.com/v1",
@@ -105,9 +109,11 @@ def save_graph_visualization(graph, filename: str = "graph.png") -> None:
         print(f"Failed to save graph visualization: {e}")
 
 
-# 每次在调用 LLM 的节点之前，都会调用该函数
+# LangChain 1.x 迁移: pre_model_hook 函数 → @before_model 中间件装饰器
+# 每次在调用 LLM 的节点之前，都会调用该中间件
 # 修剪聊天历史以满足 token 数量或消息数量的限制
-def pre_model_hook(state):
+@before_model
+def trim_hook(state, runtime):
     trimmed_messages = trim_messages(
         messages = state["messages"],
         # 限制为 4 条消息
@@ -148,13 +154,13 @@ async def run_agent():
     async with AsyncPostgresSaver.from_conn_string(db_uri) as checkpointer:
         await checkpointer.setup()
 
-        # 创建ReAct风格的agent
-        agent = create_react_agent(
+        # LangChain 1.x 迁移: create_react_agent → create_agent, prompt → system_prompt, pre_model_hook → middleware
+        agent = create_agent(
             model=llm,
             tools=tools,
-            prompt=system_message,
-            # 一个可选的节点，用于添加在agent节点之前
-            pre_model_hook=pre_model_hook,
+            system_prompt=system_message,
+            # 使用 middleware 列表替代 pre_model_hook
+            middleware=[trim_hook],
             checkpointer=checkpointer
         )
 
