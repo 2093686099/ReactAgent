@@ -12,11 +12,10 @@
 
 # 3. 项目依赖
 ```
-pip install langgraph
-pip install langchain
-pip install langchain-deepseek
-pip install langchain-mcp-adapters
-pip install langgraph-checkpoint-postgres
+pip install langgraph==1.1.6
+pip install langchain==1.2.15
+pip install langchain-openai==1.1.12
+pip install langgraph-checkpoint-postgres==3.0.5
 ```
 
 # 4. 使用Docker方式运行PostgreSQL数据库

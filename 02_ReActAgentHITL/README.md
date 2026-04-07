@@ -11,8 +11,8 @@
 
 # 2. 项目依赖
 ```
-pip install langgraph
-pip install langchain
-pip install langchain-deepseek
+pip install langgraph==1.1.6
+pip install langchain==1.2.15
+pip install langchain-openai==1.1.12
 pip install langchain-mcp-adapters
 ```
