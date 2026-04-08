@@ -166,30 +166,40 @@ async def run_agent():
     # 定义short-term需使用的thread_id
     config = {"configurable": {"thread_id": "1"}}
 
-    # # 1、非流式处理查询
-    agent_response = await agent.ainvoke({"messages": [HumanMessage(content="预定汉庭酒店")]}, config)
-    # # agent_response = await agent.ainvoke({"messages": [HumanMessage(content="调用工具查询下上海的天气")]}, config)
-    # # agent_response = await agent.ainvoke({"messages": [HumanMessage(content="调用工具预定一个汉庭酒店")]}, config)
-    # # 将返回的messages进行格式化输出
-    # parse_messages(agent_response['messages'])
-    # agent_response_content = agent_response["messages"][-1].content
-    # print(f"agent_response:{agent_response_content}")
-    #
-    # (1)模拟人类反馈：测试3种反馈方式
-    agent_response = await agent.ainvoke(
-        Command(resume=[{"type": "accept"}]),
-        # Command(resume=[{"type": "edit", "args": {"args": {'location': '120.619585,31.299379'}}}]),
-        # Command(resume=[{"type": "response", "args": "我不想查询了"}]),
-        config
-    )
+    # # 1、非流式处理查询（官方示例做法：先拿 interrupt，再用 Command(resume=...) 恢复）
+    first_response = await agent.ainvoke({"messages": [HumanMessage(content="预定汉庭酒店")]}, config)
+    # # first_response = await agent.ainvoke({"messages": [HumanMessage(content="调用工具查询下上海的天气")]}, config)
+    # # first_response = await agent.ainvoke({"messages": [HumanMessage(content="调用工具预定一个汉庭酒店")]}, config)
+
+    interrupts = first_response.get("__interrupt__", ())
+    if interrupts:
+        # HITLRequest 结构：{"action_requests": [...], "review_configs": [...]}
+        hitl_request = interrupts[0].value
+        action_requests = hitl_request.get("action_requests", [])
+
+        # (1)模拟人类反馈：逐个 action 给出 decision（approve / edit / reject）
+        decisions = [{"type": "approve"} for _ in action_requests]
+        # decisions = [{
+        #     "type": "edit",
+        #     "edited_action": {"name": "book_hotel", "args": {"hotel_name": "汉庭酒店(苏州园区店)"}}
+        # }]
+        # decisions = [{"type": "reject", "message": "我不想查询了"}]
+
+        agent_response = await agent.ainvoke(
+            Command(resume={"decisions": decisions}),
+            config,
+        )
+    else:
+        # 没有触发人工审批时，直接使用首次返回结果
+        agent_response = first_response
     # 将返回的messages进行格式化输出
     parse_messages(agent_response['messages'])
     agent_response_content = agent_response["messages"][-1].content
     print(f"agent_response:{agent_response_content}")
 
-    # # (2)模拟人类反馈：测试多伦反馈
+    # # (2)模拟人类反馈：测试多轮反馈
     # agent_response = await agent.ainvoke(
-    #     Command(resume=[{"type": "response", "args": "我想查询的经纬度是120.619585,31.299379"}]),
+    #     Command(resume={"decisions": [{"type": "reject", "message": "我想查询的经纬度是120.619585,31.299379"}]}),
     #     config
     # )
     # # 将返回的messages进行格式化输出
@@ -198,7 +208,7 @@ async def run_agent():
     # print(f"agent_response:{agent_response_content}")
     #
     # agent_response = await agent.ainvoke(
-    #     Command(resume=[{"type": "accept"}]),
+    #     Command(resume={"decisions": [{"type": "approve"}]}),
     #     config
     # )
     # # 将返回的messages进行格式化输出
@@ -227,9 +237,9 @@ async def run_agent():
     #
     # # 模拟人类反馈：测试3种反馈方式
     # async for message_chunk, metadata in agent.astream(
-    #     Command(resume=[{"type": "accept"}]),
-    #     # Command(resume=[{"type": "edit", "args": {"args": {'location': '120.619585,31.299379'}}}]),
-    #     # Command(resume=[{"type": "response", "args": "我不想查询了"}]),
+    #     Command(resume={"decisions": [{"type": "approve"}]}),
+    #     # Command(resume={"decisions": [{"type": "edit", "edited_action": {"name": "...", "args": {...}}}]}),
+    #     # Command(resume={"decisions": [{"type": "reject", "message": "我不想查询了"}]}),
     #     config,
     #     stream_mode="messages"
     # ):

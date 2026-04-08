@@ -89,9 +89,12 @@ class InterruptResponse(BaseModel):
     user_id: str
     # 会话唯一标识
     session_id: str
-    # 响应类型：accept(允许调用), edit(调整工具参数，此时args中携带修改后的调用参数), response(直接反馈信息，此时args中携带修改后的调用参数)，reject(不允许调用)
+    # 响应类型：approve(允许调用), edit(调整工具参数), reject(不允许调用并可附加message)
+    # 兼容历史值：accept -> approve, response -> reject
     response_type: str
-    # 如果是edit, response类型，可能需要额外的参数
+    # edit/reject 时的附加参数：
+    # - edit: {"edited_args": {...}, "name": "可选工具名"} 或历史兼容 {"args": {...}}
+    # - reject: {"message": "..."} 或历史兼容 {"args": "..."}
     args: Optional[Dict[str, Any]] = None
 
 # 定义数据模型 系统内的会话状态响应数据
@@ -781,6 +784,15 @@ async def resume_agent(response: InterruptResponse):
         logger.error(f"status_code=400,会话当前状态为 {status}，无法恢复非中断状态的会话")
         raise HTTPException(status_code=400, detail=f"会话当前状态为 {status}，无法恢复非中断状态的会话")
 
+    # 获取最近一次中断数据（用于构建官方 decisions 结构）
+    last_response_data = session.get("last_response")
+    interrupt_data = {}
+    if isinstance(last_response_data, AgentResponse):
+        interrupt_data = last_response_data.interrupt_data or {}
+    elif isinstance(last_response_data, dict):
+        interrupt_data = last_response_data.get("interrupt_data", {}) or {}
+    action_requests = interrupt_data.get("action_requests", [])
+
     # 更新会话状态
     status = "running"
     last_query = None
@@ -789,17 +801,67 @@ async def resume_agent(response: InterruptResponse):
     ttl = Config.TTL
     await app.state.session_manager.update_session(user_id, session_id, status, last_query, last_response, last_updated, ttl)
 
-    # 构造响应数据
-    command_data = {
-        "type": response.response_type
-    }
-    # 如果提供了参数，添加到响应数据中
-    if response.args:
-        command_data["args"] = response.args
+    # 构造官方 HITLResponse: {"decisions": [...]}
+    response_type = (response.response_type or "").lower().strip()
+    if response_type == "accept":
+        response_type = "approve"
+    elif response_type == "response":
+        response_type = "reject"
+
+    if response_type not in {"approve", "edit", "reject"}:
+        logger.error(f"status_code=400,不支持的响应类型: {response.response_type}")
+        raise HTTPException(status_code=400, detail=f"不支持的响应类型: {response.response_type}")
+
+    interrupt_count = len(action_requests) if action_requests else 1
+    decisions: List[Dict[str, Any]] = []
+    if response_type == "approve":
+        decisions = [{"type": "approve"} for _ in range(interrupt_count)]
+    elif response_type == "reject":
+        reject_message = None
+        if response.args:
+            reject_message = response.args.get("message") or response.args.get("args")
+        decision: Dict[str, Any] = {"type": "reject"}
+        if reject_message:
+            decision["message"] = reject_message
+        decisions = [decision for _ in range(interrupt_count)]
+    else:
+        if interrupt_count != 1:
+            logger.error("status_code=400,当前中断包含多个工具调用，不支持单次 edit")
+            raise HTTPException(status_code=400, detail="当前中断包含多个工具调用，不支持单次 edit，请使用 approve/reject")
+        if not response.args:
+            logger.error("status_code=400,edit 需要提供 edited_args")
+            raise HTTPException(status_code=400, detail="edit 需要提供 edited_args")
+
+        edited_args = response.args.get("edited_args")
+        if edited_args is None:
+            edited_args = response.args.get("args")
+        if not isinstance(edited_args, dict):
+            logger.error("status_code=400,edited_args 必须是 JSON 对象")
+            raise HTTPException(status_code=400, detail="edited_args 必须是 JSON 对象")
+
+        tool_name = response.args.get("name")
+        if not tool_name and action_requests:
+            tool_name = action_requests[0].get("name")
+        if not tool_name:
+            logger.error("status_code=400,无法确定编辑目标工具名")
+            raise HTTPException(status_code=400, detail="无法确定编辑目标工具名，请在 args.name 中提供工具名")
+
+        decisions = [{
+            "type": "edit",
+            "edited_action": {
+                "name": tool_name,
+                "args": edited_args,
+            },
+        }]
+
+    resume_payload = {"decisions": decisions}
 
     try:
         # 先恢复智能体执行
-        result = await app.state.agent.ainvoke(Command(resume=command_data), config={"configurable": {"thread_id": session_id}})
+        result = await app.state.agent.ainvoke(
+            Command(resume=resume_payload),
+            config={"configurable": {"thread_id": session_id}},
+        )
         # 将返回的messages进行格式化输出 方便查看调试
         await parse_messages(result['messages'])
         # 再处理结果并更新会话状态

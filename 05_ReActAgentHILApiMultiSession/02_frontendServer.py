@@ -72,8 +72,8 @@ def resume_agent(user_id: str, session_id: str, response_type: str, args: Option
     Args:
         user_id: 用户唯一标识
         session_id: 用户的会话唯一标识
-        response_type: 响应类型：accept(允许调用), edit(调整工具参数，此时args中携带修改后的调用参数), response(直接反馈信息，此时args中携带修改后的调用参数)，reject(不允许调用)
-        args: 如果是edit, response类型，可能需要额外的参数
+        response_type: 响应类型：approve(允许调用), edit(调整工具参数), reject(不允许调用)
+        args: 如果是edit/reject类型，可能需要额外参数
 
     Returns:
         服务端返回的结果
@@ -359,11 +359,13 @@ def check_and_restore_session(user_id: str, session_id: str):
                 # 显示中断类型和相关信息
                 interrupt_data = status_response["last_response"]["interrupt_data"]
 
-                action_request = interrupt_data.get("action_request","未知中断")
-                tool = action_request.get("action","未知工具")
-                args = action_request.get("args","未知参数")
-                console.print(f"[info]相关工具: {tool}[/info]")
-                console.print(f"[info]工具参数: {args}[/info]")
+                action_requests = interrupt_data.get("action_requests", [])
+                if action_requests:
+                    for idx, action in enumerate(action_requests, 1):
+                        tool = action.get("name", "未知工具")
+                        args = action.get("args", "未知参数")
+                        console.print(f"[info]相关工具 {idx}: {tool}[/info]")
+                        console.print(f"[info]工具参数: {args}[/info]")
 
                 # 自动恢复中断处理
                 console.print("[info]自动恢复中断处理...[/info]")
@@ -503,14 +505,22 @@ def handle_tool_interrupt(interrupt_data, user_id, session_id):
         border_style="yellow"
     ))
 
+    action_requests = interrupt_data.get("action_requests", [])
+    if action_requests:
+        for idx, action in enumerate(action_requests, 1):
+            action_name = action.get("name", "未知工具")
+            action_args = action.get("args", {})
+            console.print(f"[info]待审批工具 {idx}: {action_name}[/info]")
+            console.print(f"[info]参数: {action_args}[/info]")
+
     # 获取用户输入
-    user_input = Prompt.ask("[highlight]您的选择[/highlight]")
+    user_input = Prompt.ask("[highlight]您的选择(yes/no/edit/message)[/highlight]")
 
     # 处理用户输入
     try:
         while True:
             if user_input.lower() == "yes":
-                response = resume_agent(user_id, session_id, "accept")
+                response = resume_agent(user_id, session_id, "approve")
                 break
             elif user_input.lower() == "no":
                 response = resume_agent(user_id, session_id, "reject")
@@ -518,16 +528,15 @@ def handle_tool_interrupt(interrupt_data, user_id, session_id):
             elif user_input.lower() == "edit":
                 # 获取新的查询内容
                 new_query = Prompt.ask("[highlight]请调整新的参数[/highlight]")
-                response = resume_agent(user_id, session_id, "edit", args={"args": json.loads(new_query)})
+                response = resume_agent(user_id, session_id, "edit", args={"edited_args": json.loads(new_query)})
                 break
-            elif user_input.lower() == "response":
-                # 获取新的查询内容
-                new_query = Prompt.ask("[highlight]不调用工具直接反馈信息[/highlight]")
-                response = resume_agent(user_id, session_id, "response", args={"args": new_query})
+            elif user_input.lower() == "message":
+                reject_message = Prompt.ask("[highlight]请输入拒绝原因/反馈信息[/highlight]")
+                response = resume_agent(user_id, session_id, "reject", args={"message": reject_message})
                 break
             else:
-                console.print("[error]无效输入，请输入 'yes'、'no' 、'edit' 或 'response'[/error]")
-                user_input = Prompt.ask("[highlight]您的选择[/highlight]")
+                console.print("[error]无效输入，请输入 'yes'、'no'、'edit' 或 'message'[/error]")
+                user_input = Prompt.ask("[highlight]您的选择(yes/no/edit/message)[/highlight]")
 
         # 重新获取用户输入（维持当前响应不变）
         return process_agent_response(response, user_id)
