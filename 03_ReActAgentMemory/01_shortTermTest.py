@@ -140,6 +140,54 @@ def trim_hook(state, runtime):
     return {"llm_input_messages": trimmed_messages}
 
 
+def _extract_text_from_content(content: Any) -> str:
+    """提取流式消息中的纯文本内容。"""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        texts: List[str] = []
+        for item in content:
+            if isinstance(item, str):
+                texts.append(item)
+            elif isinstance(item, dict) and item.get("type") == "text":
+                texts.append(item.get("text", ""))
+        return "".join(texts)
+    return ""
+
+
+async def stream_and_collect_response(agent, agent_input: Dict[str, Any], config: Dict[str, Any]) -> Dict[str, Any]:
+    """使用官方 v2 流式接口输出 token，并收集最终状态结果。"""
+    final_state: Dict[str, Any] | None = None
+
+    async for chunk in agent.astream(
+        input=agent_input,
+        config=config,
+        stream_mode=["values", "messages"],
+        version="v2",
+    ):
+        if not isinstance(chunk, dict):
+            continue
+
+        chunk_type = chunk.get("type")
+        if chunk_type == "messages":
+            message_chunk, metadata = chunk.get("data", (None, None))
+            # 过滤工具节点输出，避免打印原始 JSON
+            if metadata and metadata.get("langgraph_node") == "tools":
+                continue
+            text = _extract_text_from_content(getattr(message_chunk, "content", None))
+            if text:
+                print(text, end="", flush=True)
+        elif chunk_type == "values":
+            data = chunk.get("data")
+            if isinstance(data, dict):
+                final_state = data
+
+    print()
+    if final_state is None:
+        raise RuntimeError("流式输出未获取到最终状态")
+    return final_state
+
+
 # 定义并运行agent
 async def run_agent():
     # 追加自定义工具列表
@@ -185,31 +233,16 @@ async def run_agent():
         user_input = f"我叫什么"
 
 
-        # 1、非流式处理查询
-        agent_response = await agent.ainvoke({"messages": [HumanMessage(content=user_input)]}, config)
+        # 使用官方 v2 流式输出（messages + values）
+        agent_response = await stream_and_collect_response(
+            agent,
+            {"messages": [HumanMessage(content=user_input)]},
+            config,
+        )
         # 将返回的messages进行格式化输出
-        # print(f"agent_response:{agent_response}")
         parse_messages(agent_response['messages'])
         agent_response_content = agent_response["messages"][-1].content
         print(f"final response: {agent_response_content}")
-
-        # # 2、流式处理查询
-        # async for message_chunk, metadata in agent.astream(
-        #         input={"messages": [HumanMessage(content=user_input)]},
-        #         config=config,
-        #         stream_mode="messages"
-        # ):
-        #     # 测试原始输出
-        #     # print(f"Token:{message_chunk}\n")
-        #     # print(f"Metadata:{metadata}\n\n")
-        #
-        #     # 跳过工具输出
-        #     # if metadata["langgraph_node"]=="tools":
-        #     #     continue
-        #
-        #     # 输出最终结果
-        #     if message_chunk.content:
-        #         print(message_chunk.content, end="|", flush=True)
 
 
 

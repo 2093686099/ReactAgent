@@ -443,6 +443,57 @@ async def parse_messages(messages: List[Any]) -> None:
         print(f"消息 ID: {msg_id}")
         print("-" * 50)
 
+
+def _extract_text_from_content(content: Any) -> str:
+    """提取流式消息中的纯文本内容。"""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        texts: List[str] = []
+        for item in content:
+            if isinstance(item, str):
+                texts.append(item)
+            elif isinstance(item, dict) and item.get("type") == "text":
+                texts.append(item.get("text", ""))
+        return "".join(texts)
+    return ""
+
+
+async def stream_and_collect_result(agent, agent_input: Dict[str, Any] | Command, config: Dict[str, Any]) -> Dict[str, Any]:
+    """使用官方 v2 流式接口收集最终状态，并输出可读 token 日志。"""
+    final_state: Dict[str, Any] | None = None
+
+    async for chunk in agent.astream(
+        input=agent_input,
+        config=config,
+        stream_mode=["values", "updates", "messages"],
+        version="v2",
+    ):
+        if not isinstance(chunk, dict):
+            continue
+
+        chunk_type = chunk.get("type")
+        if chunk_type == "messages":
+            message_chunk, metadata = chunk.get("data", (None, None))
+            # 过滤工具节点输出，避免日志中出现工具原始 JSON
+            if metadata and metadata.get("langgraph_node") == "tools":
+                continue
+            text = _extract_text_from_content(getattr(message_chunk, "content", None))
+            if text:
+                logger.debug(f"[stream] {text}")
+        elif chunk_type == "updates":
+            updates = chunk.get("data")
+            if isinstance(updates, dict) and "__interrupt__" in updates:
+                logger.info("检测到 HITL 中断事件，等待人工决策。")
+        elif chunk_type == "values":
+            data = chunk.get("data")
+            if isinstance(data, dict):
+                final_state = data
+
+    if final_state is None:
+        raise RuntimeError("流式输出未获取到最终状态")
+    return final_state
+
 # 处理智能体返回结果 可能是中断，也可能是最终结果
 async def process_agent_result(
         session_id: str,
@@ -735,8 +786,12 @@ async def invoke_agent(request: AgentRequest):
     ]
 
     try:
-        # 先调用智能体
-        result = await app.state.agent.ainvoke({"messages": messages}, config={"configurable": {"thread_id": session_id}})
+        # 使用官方 v2 流式输出并收集最终状态
+        result = await stream_and_collect_result(
+            app.state.agent,
+            {"messages": messages},
+            config={"configurable": {"thread_id": session_id}},
+        )
         # 将返回的messages进行格式化输出 方便查看调试
         await parse_messages(result['messages'])
 
@@ -857,8 +912,9 @@ async def resume_agent(response: InterruptResponse):
     resume_payload = {"decisions": decisions}
 
     try:
-        # 先恢复智能体执行
-        result = await app.state.agent.ainvoke(
+        # 使用官方 v2 流式输出并收集最终状态
+        result = await stream_and_collect_result(
+            app.state.agent,
             Command(resume=resume_payload),
             config={"configurable": {"thread_id": session_id}},
         )
