@@ -166,93 +166,66 @@ async def run_agent():
     # 定义short-term需使用的thread_id
     config = {"configurable": {"thread_id": "1"}}
 
-    # # 1、非流式处理查询（官方示例做法：先拿 interrupt，再用 Command(resume=...) 恢复）
-    first_response = await agent.ainvoke({"messages": [HumanMessage(content="预定汉庭酒店")]}, config)
-    # # first_response = await agent.ainvoke({"messages": [HumanMessage(content="调用工具查询下上海的天气")]}, config)
-    # # first_response = await agent.ainvoke({"messages": [HumanMessage(content="调用工具预定一个汉庭酒店")]}, config)
+    # 官方流式示例做法：stream_mode=["updates", "messages"] + version="v2"
+    # - "messages" 用于实时 token 输出
+    # - "updates" 用于捕获 __interrupt__
+    text = input("请输入查询内容:")
+    stream_input = {"messages": [HumanMessage(content=text)]}
+    pending_interrupts = ()
 
-    interrupts = first_response.get("__interrupt__", ())
-    if interrupts:
-        # HITLRequest 结构：{"action_requests": [...], "review_configs": [...]}
-        hitl_request = interrupts[0].value
+    async for chunk in agent.astream(
+        input=stream_input,
+        config=config,
+        stream_mode=["updates", "messages"],
+        version="v2",
+    ):
+        if not isinstance(chunk, dict):
+            continue
+
+        if chunk.get("type") == "messages":
+            message_chunk, metadata = chunk.get("data", (None, None))
+            # 如需过滤工具节点 token，可放开这个判断
+            # if metadata and metadata.get("langgraph_node") == "tools":
+            #     continue
+            if message_chunk and message_chunk.content:
+                print(message_chunk.content, end="", flush=True)
+
+        elif chunk.get("type") == "updates":
+            updates = chunk.get("data", {})
+            if isinstance(updates, dict) and "__interrupt__" in updates:
+                pending_interrupts = updates["__interrupt__"]
+                print("\n\n[HITL] 检测到人工审批中断，等待决策...")
+                break
+
+    # 流式中断后的恢复（approve/edit/reject）
+    if pending_interrupts:
+        interrupt_obj = pending_interrupts[0]
+        hitl_request = getattr(interrupt_obj, "value", {})
+        if isinstance(interrupt_obj, dict):
+            hitl_request = interrupt_obj.get("value", hitl_request)
+
         action_requests = hitl_request.get("action_requests", [])
-
-        # (1)模拟人类反馈：逐个 action 给出 decision（approve / edit / reject）
         decisions = [{"type": "approve"} for _ in action_requests]
         # decisions = [{
         #     "type": "edit",
         #     "edited_action": {"name": "book_hotel", "args": {"hotel_name": "汉庭酒店(苏州园区店)"}}
         # }]
-        # decisions = [{"type": "reject", "message": "我不想查询了"}]
+        # decisions = [{"type": "reject", "message": "我不想查询了"} for _ in action_requests]
 
-        agent_response = await agent.ainvoke(
+        async for chunk in agent.astream(
             Command(resume={"decisions": decisions}),
-            config,
-        )
-    else:
-        # 没有触发人工审批时，直接使用首次返回结果
-        agent_response = first_response
-    # 将返回的messages进行格式化输出
-    parse_messages(agent_response['messages'])
-    agent_response_content = agent_response["messages"][-1].content
-    print(f"agent_response:{agent_response_content}")
+            config=config,
+            stream_mode=["updates", "messages"],
+            version="v2",
+        ):
+            if not isinstance(chunk, dict):
+                continue
+            if chunk.get("type") == "messages":
+                message_chunk, _metadata = chunk.get("data", (None, None))
+                if message_chunk and message_chunk.content:
+                    print(message_chunk.content, end="", flush=True)
 
-    # # (2)模拟人类反馈：测试多轮反馈
-    # agent_response = await agent.ainvoke(
-    #     Command(resume={"decisions": [{"type": "reject", "message": "我想查询的经纬度是120.619585,31.299379"}]}),
-    #     config
-    # )
-    # # 将返回的messages进行格式化输出
-    # parse_messages(agent_response['messages'])
-    # agent_response_content = agent_response["messages"][-1].content
-    # print(f"agent_response:{agent_response_content}")
-    #
-    # agent_response = await agent.ainvoke(
-    #     Command(resume={"decisions": [{"type": "approve"}]}),
-    #     config
-    # )
-    # # 将返回的messages进行格式化输出
-    # parse_messages(agent_response['messages'])
-    # agent_response_content = agent_response["messages"][-1].content
-    # print(f"agent_response:{agent_response_content}")
-
-
-    # 2、流式处理查询
-    # async for message_chunk, metadata in agent.astream(
-    #         input={"messages": [HumanMessage(content="查询上海的天气")]},
-    #         config=config,
-    #         stream_mode="messages"
-    # ):
-    #     # 测试原始输出
-    #     # print(f"Token:{message_chunk}\n")
-    #     # print(f"Metadata:{metadata}\n\n")
-    #
-    #     # 跳过工具输出
-    #     # if metadata["langgraph_node"]=="tools":
-    #     #     continue
-    #
-    #     # 输出最终结果
-    #     if message_chunk.content:
-    #         print(message_chunk.content, end="|", flush=True)
-    #
-    # # 模拟人类反馈：测试3种反馈方式
-    # async for message_chunk, metadata in agent.astream(
-    #     Command(resume={"decisions": [{"type": "approve"}]}),
-    #     # Command(resume={"decisions": [{"type": "edit", "edited_action": {"name": "...", "args": {...}}}]}),
-    #     # Command(resume={"decisions": [{"type": "reject", "message": "我不想查询了"}]}),
-    #     config,
-    #     stream_mode="messages"
-    # ):
-    #     # 测试原始输出
-    #     # print(f"Token:{message_chunk}\n")
-    #     # print(f"Metadata:{metadata}\n\n")
-    #
-    #     # 跳过工具输出
-    #     # if metadata["langgraph_node"]=="tools":
-    #     #     continue
-    #     # 输出最终结果
-    #     if message_chunk.content:
-    #         print(message_chunk.content, end="|", flush=True)
+    print()
 
 
 
