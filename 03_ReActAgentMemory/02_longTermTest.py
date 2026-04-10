@@ -171,10 +171,7 @@ async def stream_and_collect_response(agent, agent_input: Dict[str, Any], config
 
         chunk_type = chunk.get("type")
         if chunk_type == "messages":
-            message_chunk, metadata = chunk.get("data", (None, None))
-            # 过滤工具节点输出，避免打印原始 JSON
-            if metadata and metadata.get("langgraph_node") == "tools":
-                continue
+            message_chunk, _metadata = chunk.get("data", (None, None))
             text = _extract_text_from_content(getattr(message_chunk, "content", None))
             if text:
                 print(text, end="", flush=True)
@@ -207,7 +204,6 @@ async def run_agent():
     async with (
         AsyncPostgresSaver.from_conn_string(db_uri) as checkpointer,
         AsyncPostgresStore.from_conn_string(db_uri) as store
-
     ):
         await store.setup()
         await checkpointer.setup()
@@ -240,11 +236,11 @@ async def run_agent():
         user_input = f"预定一个汉庭酒店,我的附加信息有:{info}"
 
         # 自定义存储逻辑 对用户输入进行处理，检查是否需要存储长期记忆
-        # namespace = ("memories", config["configurable"]["user_id"])
+        namespace = ("memories", config["configurable"]["user_id"])
         # memory1 = "我的名字叫kevin"
         # await store.aput(namespace, str(uuid.uuid4()), {"data": memory1})
-        # memory2 = "我的住宿偏好是:有窗户、有Wi-Fi"
-        # await store.aput(namespace, str(uuid.uuid4()), {"data": memory2})
+        memory2 = "我的住宿偏好是:有窗户、有Wi-Fi"
+        await store.aput(namespace, str(uuid.uuid4()), {"data": memory2})
         # print("已存储长期记忆！")
 
         # 使用官方 v2 流式输出（messages + values）

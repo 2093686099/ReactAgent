@@ -170,10 +170,7 @@ async def stream_and_collect_response(agent, agent_input: Dict[str, Any], config
 
         chunk_type = chunk.get("type")
         if chunk_type == "messages":
-            message_chunk, metadata = chunk.get("data", (None, None))
-            # 过滤工具节点输出，避免打印原始 JSON
-            if metadata and metadata.get("langgraph_node") == "tools":
-                continue
+            message_chunk, _metadata = chunk.get("data", (None, None))
             text = _extract_text_from_content(getattr(message_chunk, "content", None))
             if text:
                 print(text, end="", flush=True)

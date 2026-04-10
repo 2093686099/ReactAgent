@@ -19,7 +19,7 @@ load_dotenv()
 
 # [LangChain 1.x 迁移] 使用 ChatOpenAI 直接初始化大模型
 llm = ChatOpenAI(
-    model="MiniMax/MiniMax-M2.5",
+    model="moonshotai/Kimi-K2.5",
     temperature=0,
     base_url="https://api-inference.modelscope.cn/v1",
     api_key=os.getenv("MODELSCOPE_API_KEY"),
@@ -205,11 +205,11 @@ async def run_agent():
             hitl_request = interrupt_obj.get("value", hitl_request)
 
         action_requests = hitl_request.get("action_requests", [])
-        decisions = [{"type": "approve"} for _ in action_requests]
-        # decisions = [{
-        #     "type": "edit",
-        #     "edited_action": {"name": "book_hotel", "args": {"hotel_name": "汉庭酒店(苏州园区店)"}}
-        # }]
+        # decisions = [{"type": "approve"} for _ in action_requests]
+        decisions = [{
+            "type": "edit",
+            "edited_action": {"name": "book_hotel", "args": {"hotel_name": "改成查询北京的天气吧"}}
+        }]
         # decisions = [{"type": "reject", "message": "我不想查询了"} for _ in action_requests]
 
         async for chunk in agent.astream(
