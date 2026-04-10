@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "langchain-docs": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "mcpdoc",
+        "mcpdoc",
+        "--urls",
+        "langchain-python:https://python.langchain.com/llms.txt",
+        "langgraph-python:https://langchain-ai.github.io/langgraph/llms.txt",
+        "--transport",
+        "stdio"
+      ]
+    },
+    "langchain-reference": {
+      "type": "url",
+      "url": "https://reference.langchain.com/mcp"
+    }
+  }
+}
