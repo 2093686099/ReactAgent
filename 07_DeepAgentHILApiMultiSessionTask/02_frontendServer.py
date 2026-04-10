@@ -304,6 +304,19 @@ def display_session_info(status_response):
                     border_style="green"
                 ))
 
+            # 展示任务规划
+            if last_response.get("todos"):
+                todo_lines = []
+                status_icon = {"pending": "[ ]", "in_progress": "[~]", "completed": "[x]"}
+                for todo in last_response["todos"]:
+                    icon = status_icon.get(todo.get("status", ""), "[ ]")
+                    todo_lines.append(f"  {icon} {todo.get('content', '')}")
+                console.print(Panel(
+                    "\n".join(todo_lines),
+                    title="[info]任务规划[/info]",
+                    border_style="cyan"
+                ))
+
         elif status == "interrupted" and last_response.get("interrupt_data"):
             interrupt_data = last_response["interrupt_data"]
             message = interrupt_data.get("description", "需要您的输入")
@@ -612,6 +625,20 @@ def process_agent_response_resume(response, user_id):
                     pass
                     # console.print("[info]原始结果数据结构:[/info]")
                     # console.print(result)
+
+            # 展示任务规划
+            todos = response.get("todos")
+            if todos:
+                todo_lines = []
+                status_icon = {"pending": "[ ]", "in_progress": "[~]", "completed": "[x]"}
+                for todo in todos:
+                    icon = status_icon.get(todo.get("status", ""), "[ ]")
+                    todo_lines.append(f"  {icon} {todo.get('content', '')}")
+                console.print(Panel(
+                    "\n".join(todo_lines),
+                    title="[info]任务规划[/info]",
+                    border_style="cyan"
+                ))
 
             return result
 

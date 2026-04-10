@@ -39,6 +39,8 @@ class AgentResponse(BaseModel):
     result: Optional[Dict[str, Any]] = None
     # # interrupted时的中断消息
     interrupt_data: Optional[Dict[str, Any]] = None
+    # 任务规划列表
+    todos: Optional[List[Dict[str, str]]] = None
 
 # 定义数据模型 客户端发起的恢复智能体运行的中断反馈请求数据
 class InterruptResponse(BaseModel):

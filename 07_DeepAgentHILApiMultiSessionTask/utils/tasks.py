@@ -5,16 +5,17 @@ from concurrent_log_handler import ConcurrentRotatingFileHandler
 from typing import Dict, Any, Optional, List
 from celery import Celery
 import time
-# [LangChain 1.x 迁移] 替换 create_react_agent 为 create_agent，新增中间件导入
-from langchain.agents import create_agent
-from langchain.agents.middleware import HumanInTheLoopMiddleware, before_model
+# [Deep Agent 迁移] 替换 create_agent 为 create_deep_agent，新增子Agent、摘要中间件等
+from deepagents import create_deep_agent
+from deepagents.middleware.subagents import SubAgent
+from deepagents.backends.store import StoreBackend
+from langchain.agents.middleware.summarization import SummarizationMiddleware
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.store.postgres import AsyncPostgresStore
 from psycopg_pool import AsyncConnectionPool
-from langchain_core.messages.utils import trim_messages
 from .config import Config
 from .llms import get_llm
-from .tools import get_tools, get_hitl_config
+from .tools import get_mcp_tools, get_custom_tools, get_hitl_config
 from .models import AgentResponse
 from .redis import RedisSessionManager, get_session_manager
 from langgraph.types import Command
@@ -64,30 +65,6 @@ celery_app.conf.update(
     enable_utc=True,
 )
 
-
-# [LangChain 1.x 迁移] 使用 @before_model 装饰器替代 pre_model_hook 参数
-# 针对短期记忆修剪聊天历史消息 限制消息的token数量
-@before_model
-def trimmed_messages_hook(state, runtime):
-    """
-    修剪聊天历史消息，限制消息的 token 数量
-
-    Args:
-        state: 包含消息的字典，通常包含 "messages" 键
-        runtime: 运行时上下文信息
-
-    Returns:
-        dict: 包含修剪后消息的字典，键为 "llm_input_messages"
-    """
-    trimmed_messages = trim_messages(
-        messages=state["messages"],
-        max_tokens=20,
-        strategy="last",
-        token_counter=len,
-        start_on="human",
-        allow_partial=False
-    )
-    return {"llm_input_messages": trimmed_messages}
 
 # 读取指定用户长期记忆中的内容
 async def read_long_term_info(user_id: str, store):
@@ -289,7 +266,8 @@ async def process_agent_result(
                 session_id=session_id,
                 task_id=task_id,
                 status="interrupted",
-                interrupt_data=interrupt_data
+                interrupt_data=interrupt_data,
+                todos=result.get("todos"),
             )
             logger.info(f"当前触发工具调用中断:{response}")
         # 如果没有中断，返回最终结果
@@ -298,7 +276,8 @@ async def process_agent_result(
                 session_id=session_id,
                 task_id=task_id,
                 status="completed",
-                result=result
+                result=result,
+                todos=result.get("todos"),
             )
             logger.info(f"最终智能体回复结果:{response}")
 
@@ -425,20 +404,10 @@ def invoke_agent_task(user_id: str, session_id: str, task_id: str, query: str, s
                 store = AsyncPostgresStore(pool)
                 # 获取语言模型
                 llm_chat, _ = get_llm(Config.LLM_TYPE)
-                # 获取工具列表
-                tools = await get_tools()
-
-                # [LangChain 1.x 迁移] 使用 create_agent 替代 create_react_agent
-                # 使用 middleware 列表替代 pre_model_hook 参数
-                # 通过 HumanInTheLoopMiddleware 统一配置HITL中断
-                interrupt_on = get_hitl_config(tools)
-                agent = create_agent(
-                    model=llm_chat,
-                    tools=tools,
-                    middleware=[trimmed_messages_hook, HumanInTheLoopMiddleware(interrupt_on=interrupt_on)],
-                    checkpointer=checkpointer,
-                    store=store
-                )
+                # 获取工具列表（拆分为 MCP 工具和自定义工具）
+                mcp_tools = await get_mcp_tools()
+                custom_tools = get_custom_tools()
+                interrupt_on = get_hitl_config(custom_tools)
 
                 # 获取长期记忆
                 system_message = system_prompt
@@ -451,16 +420,37 @@ def invoke_agent_task(user_id: str, session_id: str, task_id: str, query: str, s
                         system_message = f"{system_prompt}我的附加信息有:{long_term_info}"
                         logger.info(f"获取用户长期记忆，system_message的信息为:{system_message}")
 
-                # 构造智能体输入消息体
-                messages = [
-                    {"role": "system", "content": system_message},
-                    {"role": "user", "content": query}
-                ]
+                # [Deep Agent 迁移] 使用 create_deep_agent 替代 create_agent
+                # 主 Agent 只持有自定义工具，MCP 工具委派给 researcher 子 Agent
+                agent = create_deep_agent(
+                    model=llm_chat,
+                    tools=custom_tools,
+                    system_prompt=system_message,
+                    middleware=[
+                        SummarizationMiddleware(
+                            model=llm_chat,
+                            trigger=[("tokens", 3000), ("messages", 50)],
+                            keep=("messages", 20),
+                        ),
+                    ],
+                    interrupt_on=interrupt_on,
+                    checkpointer=checkpointer,
+                    store=store,
+                    backend=StoreBackend(),
+                    subagents=[
+                        SubAgent(
+                            name="researcher",
+                            description="负责使用高德地图工具进行地理信息搜索、路线规划和周边查询",
+                            system_prompt="你是一个地理信息调研助手，擅长使用地图工具查询地点、路线和周边信息。将调研结果整理为结构化摘要返回。",
+                            tools=mcp_tools,
+                        ),
+                    ],
+                )
 
-                # 使用官方 v2 流式输出并收集最终状态
+                # system_prompt 已通过 create_deep_agent 参数传入，只需传 user 消息
                 result = await stream_and_collect_result(
                     agent,
-                    {"messages": messages},
+                    {"messages": [{"role": "user", "content": query}]},
                     config={"configurable": {"thread_id": task_id}},
                 )
 
@@ -554,19 +544,34 @@ def resume_agent_task(user_id: str, session_id: str, task_id: str, command_data:
                 store = AsyncPostgresStore(pool)
                 # 获取语言模型
                 llm_chat, _ = get_llm(Config.LLM_TYPE)
-                # 获取工具列表
-                tools = await get_tools()
+                # 获取工具列表（拆分为 MCP 工具和自定义工具）
+                mcp_tools = await get_mcp_tools()
+                custom_tools = get_custom_tools()
+                interrupt_on = get_hitl_config(custom_tools)
 
-                # [LangChain 1.x 迁移] 使用 create_agent 替代 create_react_agent
-                # 使用 middleware 列表替代 pre_model_hook 参数
-                # 通过 HumanInTheLoopMiddleware 统一配置HITL中断
-                interrupt_on = get_hitl_config(tools)
-                agent = create_agent(
+                # [Deep Agent 迁移] resume 时不需要传 system_prompt（checkpointer 恢复状态）
+                agent = create_deep_agent(
                     model=llm_chat,
-                    tools=tools,
-                    middleware=[trimmed_messages_hook, HumanInTheLoopMiddleware(interrupt_on=interrupt_on)],
+                    tools=custom_tools,
+                    middleware=[
+                        SummarizationMiddleware(
+                            model=llm_chat,
+                            trigger=[("tokens", 3000), ("messages", 50)],
+                            keep=("messages", 20),
+                        ),
+                    ],
+                    interrupt_on=interrupt_on,
                     checkpointer=checkpointer,
-                    store=store
+                    store=store,
+                    backend=StoreBackend(),
+                    subagents=[
+                        SubAgent(
+                            name="researcher",
+                            description="负责使用高德地图工具进行地理信息搜索、路线规划和周边查询",
+                            system_prompt="你是一个地理信息调研助手，擅长使用地图工具查询地点、路线和周边信息。将调研结果整理为结构化摘要返回。",
+                            tools=mcp_tools,
+                        ),
+                    ],
                 )
 
                 # 使用官方 v2 流式输出并收集最终状态

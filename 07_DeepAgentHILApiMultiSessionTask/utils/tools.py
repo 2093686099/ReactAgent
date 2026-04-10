@@ -1,8 +1,6 @@
 import os
 import logging
 from concurrent_log_handler import ConcurrentRotatingFileHandler
-# [LangChain 1.x 迁移] 移除了HITL相关导入（HumanInterruptConfig, HumanInterrupt, interrupt, RunnableConfig, BaseTool, create_tool, Callable）
-# HITL功能现在通过 HumanInTheLoopMiddleware 在 agent 创建时统一配置
 from langchain_core.tools import tool
 from .config import Config
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -31,11 +29,20 @@ handler.setFormatter(logging.Formatter(
 logger.addHandler(handler)
 
 
-# 获取工具列表 提供给第三方调用
-# [LangChain 1.x 迁移] 移除了 add_human_in_the_loop() 函数
-# HITL功能现在通过 HumanInTheLoopMiddleware 中间件在 agent 创建时统一配置
-async def get_tools():
-    # 自定义工具 模拟酒店预定工具
+async def get_mcp_tools():
+    """获取 MCP 工具（高德地图），分配给 researcher 子 Agent"""
+    client = MultiServerMCPClient({
+        # 高德地图MCP Server
+        "amap-maps-streamableHTTP": {
+            "url": "https://mcp.amap.com/mcp?key=" + os.getenv("AMAP_MAPS_API_KEY"),
+            "transport": "streamable_http"
+        }
+    })
+    return await client.get_tools()
+
+
+def get_custom_tools():
+    """获取自定义工具（酒店预定、计算），分配给主 Agent"""
     @tool("book_hotel", description="酒店预定工具")
     async def book_hotel(hotel_name: str):
         """
@@ -65,51 +72,40 @@ async def get_tools():
         result = a * b
         return f"{a}乘以{b}等于{result}。"
 
-    # MCP Server工具 高德地图
-    client = MultiServerMCPClient({
-        # 高德地图MCP Server
-        # "amap-amap-sse": {
-        #     "url": "https://mcp.amap.com/sse?key=" + os.getenv("AMAP_MAPS_API_KEY"),
-        #     "transport": "sse",
-        # },
-        "amap-maps-streamableHTTP": {
-            "url": "https://mcp.amap.com/mcp?key=" + os.getenv("AMAP_MAPS_API_KEY"),
-            "transport": "streamable_http"
-        }
-    })
-    # 从MCP Server中获取可提供使用的全部工具
-    amap_tools = await client.get_tools()
-
-    # [LangChain 1.x 迁移] 工具列表不再包裹HITL，直接返回原始工具
-    # HITL通过 HumanInTheLoopMiddleware 在 agent 创建时统一配置
-    tools = list(amap_tools)
-
-    # 追加自定义工具（不再包裹HITL）
-    tools.append(book_hotel)
-    tools.append(multiply)
-
-    # 返回工具列表
-    return tools
+    return [book_hotel, multiply]
 
 
-# [LangChain 1.x 迁移] 新增 get_hitl_config 函数
-# 返回每个工具是否需要HITL中断的配置字典，供 HumanInTheLoopMiddleware 使用
-def get_hitl_config(tools):
+def get_hitl_config(custom_tools):
     """
-    根据工具列表生成HITL中断配置
+    生成主 Agent 的 HITL 中断配置
 
     Args:
-        tools: 工具列表
+        custom_tools: 主 Agent 的自定义工具列表
 
     Returns:
         dict: 每个工具名称对应是否需要中断的配置字典
-              multiply 工具不需要中断（False），其余工具需要中断（True）
     """
     interrupt_on = {}
-    for t in tools:
+
+    # 自定义工具的 HITL 配置
+    for t in custom_tools:
         tool_name = getattr(t, "name", str(t))
         if tool_name == "multiply":
             interrupt_on[tool_name] = False
         else:
             interrupt_on[tool_name] = True
+
+    # Deep Agents 内置工具的 HITL 配置
+    # 危险操作 → 需要 HITL 审批
+    interrupt_on["execute"] = True       # Shell 命令执行
+    interrupt_on["write_file"] = True    # 文件写入
+    interrupt_on["edit_file"] = True     # 文件编辑
+    # 安全操作 → 无需审批
+    interrupt_on["read_file"] = False
+    interrupt_on["ls"] = False
+    interrupt_on["glob"] = False
+    interrupt_on["grep"] = False
+    interrupt_on["write_todos"] = False  # 任务规划
+    interrupt_on["task"] = False         # 子 Agent 委派
+
     return interrupt_on
