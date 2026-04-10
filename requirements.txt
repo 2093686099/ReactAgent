@@ -7,6 +7,9 @@ langchain==1.2.15
 langchain-openai==1.1.12
 langgraph-checkpoint-postgres==3.0.5
 
+# Deep Agents (07)
+deepagents
+
 # MCP 集成
 langchain-mcp-adapters
 
