@@ -215,6 +215,7 @@ def _extract_text_from_content(content: Any) -> str:
 async def stream_and_collect_result(agent, agent_input: Dict[str, Any] | Command, config: Dict[str, Any]) -> Dict[str, Any]:
     """使用官方 v2 流式接口收集最终状态，并输出可读 token 日志。"""
     final_state: Dict[str, Any] | None = None
+    pending_interrupts = None
 
     async for chunk in agent.astream(
         input=agent_input,
@@ -227,21 +228,28 @@ async def stream_and_collect_result(agent, agent_input: Dict[str, Any] | Command
 
         chunk_type = chunk.get("type")
         if chunk_type == "messages":
-            message_chunk, metadata = chunk.get("data", (None, None))
-            # 过滤工具节点输出，避免日志中出现工具原始 JSON
-            if metadata and metadata.get("langgraph_node") == "tools":
-                continue
+            message_chunk, _metadata = chunk.get("data", (None, None))
             text = _extract_text_from_content(getattr(message_chunk, "content", None))
             if text:
                 logger.debug(f"[stream] {text}")
         elif chunk_type == "updates":
             updates = chunk.get("data")
             if isinstance(updates, dict) and "__interrupt__" in updates:
+                pending_interrupts = updates["__interrupt__"]
                 logger.info("检测到 HITL 中断事件，等待人工决策。")
         elif chunk_type == "values":
             data = chunk.get("data")
             if isinstance(data, dict):
                 final_state = data
+
+    if pending_interrupts is not None:
+        # updates 中会先出现 __interrupt__，而 values 最终态不一定带该字段。
+        # 这里将中断信息合并回返回结果，避免上层误判为 completed。
+        if final_state is None:
+            return {"__interrupt__": pending_interrupts}
+        if "__interrupt__" not in final_state:
+            final_state = dict(final_state)
+            final_state["__interrupt__"] = pending_interrupts
 
     if final_state is None:
         raise RuntimeError("流式输出未获取到最终状态")
