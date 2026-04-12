@@ -11,11 +11,18 @@ from app.core.tools import get_mcp_tools, get_custom_tools, get_hitl_config
 class AgentService:
     """Agent 创建和生命周期管理 — 统一 invoke 和 resume 的 Agent 构建"""
 
+    def __init__(self, checkpointer=None, store=None):
+        self._checkpointer = checkpointer
+        self._store = store
+
     async def create_agent(self, *, system_prompt: str | None = None):
         llm_chat, _ = get_llm()
         mcp_tools = await get_mcp_tools()
         custom_tools = get_custom_tools()
         interrupt_on = get_hitl_config(custom_tools)
+
+        checkpointer = self._checkpointer or db.checkpointer
+        store = self._store or db.store
 
         return create_deep_agent(
             model=llm_chat,
@@ -29,8 +36,8 @@ class AgentService:
                 ),
             ],
             interrupt_on=interrupt_on,
-            checkpointer=db.checkpointer,
-            store=db.store,
+            checkpointer=checkpointer,
+            store=store,
             backend=StoreBackend(),
             subagents=[
                 SubAgent(

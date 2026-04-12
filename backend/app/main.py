@@ -8,7 +8,7 @@ from app.config import settings
 from app.infra.database import db
 from app.infra.redis import redis_manager
 from app.core.exceptions import BusinessError
-from app.services.task import task_service
+from app.api.deps import get_task_service
 from app.api import chat, sessions, memory
 
 
@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
     await db.connect()
     await redis_manager.connect()
     yield
-    await task_service.cancel_all()
+    await get_task_service().cancel_all()
     await redis_manager.disconnect()
     await db.disconnect()
 

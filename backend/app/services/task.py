@@ -19,8 +19,8 @@ AgentInput = dict[str, Any] | Command
 class TaskService:
     """任务生命周期管理 — 后台执行 agent 并把事件写入 Redis Stream"""
 
-    def __init__(self):
-        self._agent_service = AgentService()
+    def __init__(self, agent_service: AgentService | None = None):
+        self._agent_service = agent_service or AgentService()
         self._running: dict[str, asyncio.Task] = {}
 
     async def start_invoke(
@@ -104,6 +104,3 @@ class TaskService:
         if self._running:
             await asyncio.gather(*self._running.values(), return_exceptions=True)
             self._running.clear()
-
-
-task_service = TaskService()

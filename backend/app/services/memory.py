@@ -51,6 +51,3 @@ class MemoryService:
         )
         logger.info(f"写入长期记忆 {memory_id}（user={user_id}）")
         return memory_id
-
-
-memory_service = MemoryService()

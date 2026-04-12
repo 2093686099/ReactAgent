@@ -114,6 +114,3 @@ class SessionService:
         if deleted:
             logger.info(f"删除会话 {user_id}:{session_id}")
         return deleted > 0
-
-
-session_service = SessionService()
