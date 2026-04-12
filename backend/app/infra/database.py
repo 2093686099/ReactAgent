@@ -1,4 +1,6 @@
 # backend/app/infra/database.py
+from __future__ import annotations
+
 from psycopg_pool import AsyncConnectionPool
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.store.postgres import AsyncPostgresStore

@@ -1,4 +1,6 @@
 # backend/app/api/deps.py（公共依赖 + 服务 provider）
+from __future__ import annotations
+
 from app.config import settings
 from app.services.task import TaskService
 from app.services.session import SessionService

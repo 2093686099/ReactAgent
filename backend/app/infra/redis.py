@@ -1,4 +1,6 @@
 # backend/app/infra/redis.py
+from __future__ import annotations
+
 import redis.asyncio as redis
 from app.config import settings
 

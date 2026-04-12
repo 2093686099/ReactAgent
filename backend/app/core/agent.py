@@ -1,4 +1,6 @@
 # backend/app/core/agent.py
+from __future__ import annotations
+
 from deepagents import create_deep_agent
 from deepagents.middleware.subagents import SubAgent
 from deepagents.backends.store import StoreBackend

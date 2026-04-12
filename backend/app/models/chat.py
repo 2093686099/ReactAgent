@@ -1,4 +1,6 @@
 # backend/app/models/chat.py
+from __future__ import annotations
+
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 

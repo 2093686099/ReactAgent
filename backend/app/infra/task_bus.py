@@ -1,4 +1,6 @@
 # backend/app/infra/task_bus.py
+from __future__ import annotations
+
 import json
 import logging
 from typing import AsyncGenerator, TypedDict

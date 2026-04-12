@@ -1,4 +1,6 @@
 # backend/app/infra/llm.py
+from __future__ import annotations
+
 import logging
 import os
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings

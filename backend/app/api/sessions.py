@@ -1,4 +1,6 @@
 # backend/app/api/sessions.py
+from __future__ import annotations
+
 from fastapi import APIRouter, Depends, HTTPException
 from app.api.deps import get_current_user, get_session_service
 from app.services.session import SessionService

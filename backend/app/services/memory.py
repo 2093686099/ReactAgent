@@ -1,4 +1,6 @@
 # backend/app/services/memory.py
+from __future__ import annotations
+
 import logging
 import uuid
 from app.infra.database import db

@@ -1,4 +1,6 @@
 # backend/app/core/tools.py
+from __future__ import annotations
+
 import asyncio
 import logging
 from langchain_core.tools import tool
