@@ -37,7 +37,7 @@ async def _client():
 
 
 async def create_task_meta(task_id: str, user_id: str, session_id: str) -> None:
-    """登记 task 元数据"""
+    """登记 task 元数据（Redis HASH）"""
     client = await _client()
     meta: TaskMeta = {
         "task_id": task_id,
@@ -45,23 +45,24 @@ async def create_task_meta(task_id: str, user_id: str, session_id: str) -> None:
         "session_id": session_id,
         "status": STATUS_RUNNING,
     }
-    await client.set(_meta_key(task_id), json.dumps(meta), ex=settings.task_ttl)
+    await client.hset(_meta_key(task_id), mapping=meta)
+    await client.expire(_meta_key(task_id), settings.task_ttl)
 
 
 async def get_task_meta(task_id: str) -> TaskMeta | None:
     client = await _client()
-    raw = await client.get(_meta_key(task_id))
-    return json.loads(raw) if raw else None
+    data = await client.hgetall(_meta_key(task_id))
+    return data if data else None
 
 
 async def set_task_status(task_id: str, status: str) -> None:
     client = await _client()
-    meta = await get_task_meta(task_id)
-    if meta is None:
+    key = _meta_key(task_id)
+    exists = await client.exists(key)
+    if not exists:
         logger.warning(f"set_task_status 找不到 task {task_id}")
         return
-    meta["status"] = status
-    await client.set(_meta_key(task_id), json.dumps(meta), ex=settings.task_ttl)
+    await client.hset(key, "status", status)
 
 
 async def publish_event(task_id: str, event: str, data: dict) -> str:
