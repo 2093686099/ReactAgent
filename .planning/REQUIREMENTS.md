@@ -16,7 +16,7 @@ Requirements for Next.js 前端。Each maps to roadmap phases.
 - [ ] **CHAT-05**: 新消息到达时自动滚动到底部
 - [ ] **CHAT-06**: 发送中/等待响应时显示加载状态
 - [ ] **CHAT-07**: 请求失败时显示错误信息
-- [ ] **CHAT-08**: 打开/切换会话时加载历史消息（需后端新增 endpoint，从 checkpoint 重���消息列表）
+- [ ] **CHAT-08**: 打开/切换会话时加载历史消息（需后端新增 endpoint，从 checkpoint 重建消息列表）
 
 ### Tool & HITL
 
@@ -69,13 +69,34 @@ Deferred to v3.0+。Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated during roadmap creation) | | |
+| CHAT-01 | Phase 08 | Pending |
+| CHAT-02 | Phase 08 | Pending |
+| CHAT-03 | Phase 08 | Pending |
+| CHAT-04 | Phase 08 | Pending |
+| CHAT-05 | Phase 08 | Pending |
+| CHAT-06 | Phase 08 | Pending |
+| CHAT-07 | Phase 08 | Pending |
+| CHAT-08 | Phase 10 | Pending |
+| HITL-01 | Phase 09 | Pending |
+| HITL-02 | Phase 09 | Pending |
+| HITL-03 | Phase 09 | Pending |
+| HITL-04 | Phase 09 | Pending |
+| HITL-05 | Phase 09 | Pending |
+| HITL-06 | Phase 09 | Pending |
+| SESS-01 | Phase 10 | Pending |
+| SESS-02 | Phase 10 | Pending |
+| SESS-03 | Phase 10 | Pending |
+| SESS-04 | Phase 10 | Pending |
+| TODO-01 | Phase 11 | Pending |
+| TODO-02 | Phase 11 | Pending |
+| RESIL-01 | Phase 12 | Pending |
+| RESIL-02 | Phase 12 | Pending |
 
 **Coverage:**
-- v2.0 requirements: 21 total
-- Mapped to phases: 0
-- Unmapped: 21 ⚠️
+- v2.0 requirements: 22 total
+- Mapped to phases: 22
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-12*
-*Last updated: 2026-04-12 after initial definition*
+*Last updated: 2026-04-12 after roadmap creation*
