@@ -96,5 +96,14 @@ class TaskService:
             await task_bus.publish_event(task_id, EVT_ERROR, {"message": str(e)})
             await task_bus.set_task_status(task_id, task_bus.STATUS_ERROR)
 
+    async def cancel_all(self) -> None:
+        """取消所有运行中的 agent 后台任务（用于 shutdown）"""
+        for task_id, t in self._running.items():
+            logger.info(f"取消运行中的任务 {task_id}")
+            t.cancel()
+        if self._running:
+            await asyncio.gather(*self._running.values(), return_exceptions=True)
+            self._running.clear()
+
 
 task_service = TaskService()
