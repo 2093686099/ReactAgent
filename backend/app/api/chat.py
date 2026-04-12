@@ -97,6 +97,8 @@ async def stream(task_id: str, from_id: str = Query("0")):
     async def event_stream():
         async for entry_id, event, data in task_bus.read_events(task_id, from_id=from_id):
             yield _format_sse(event, data, entry_id=entry_id)
+            if event in ("done", "error"):
+                return
 
     return StreamingResponse(
         event_stream(),

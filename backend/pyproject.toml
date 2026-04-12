@@ -1,0 +1,38 @@
+[project]
+name = "neuron-assistant"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    # Agent 核心
+    "langgraph==1.1.6",
+    "langchain==1.2.15",
+    "langchain-openai==1.1.12",
+    "langgraph-checkpoint-postgres==3.0.5",
+    "langchain-mcp-adapters",
+    "deepagents",
+
+    # API 服务
+    "fastapi==0.115.12",
+    "uvicorn[standard]",
+    "pydantic-settings>=2.0",
+
+    # 基础设施
+    "redis>=5.0",
+    "psycopg[binary,pool]",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "httpx",          # FastAPI 测试客户端
+    "ruff",           # linter + formatter
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120

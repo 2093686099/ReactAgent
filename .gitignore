@@ -25,3 +25,4 @@ venv/
 # Project specific
 logfile/
 .mcp.json
+.claude/settings.local.json
