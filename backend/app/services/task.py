@@ -2,6 +2,7 @@
 import asyncio
 import logging
 import uuid
+from typing import Any
 from langgraph.types import Command
 from app.infra import task_bus
 from app.core.agent import AgentService
@@ -11,6 +12,8 @@ from app.config import settings
 
 
 logger = logging.getLogger(__name__)
+
+AgentInput = dict[str, Any] | Command
 
 
 class TaskService:
@@ -62,7 +65,7 @@ class TaskService:
     async def _run_agent(
         self,
         task_id: str,
-        agent_input,
+        agent_input: AgentInput,
         session_id: str,
         system_prompt: str | None,
     ) -> None:

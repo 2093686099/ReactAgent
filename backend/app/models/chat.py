@@ -15,7 +15,7 @@ class ResumeRequest(BaseModel):
     task_id: str
     response_type: str          # approve / edit / reject
     args: Optional[Dict[str, Any]] = None
-    action_requests: Optional[list] = None  # 前端回传的中断上下文
+    action_requests: list[dict[str, Any]] | None = None  # 前端回传的中断上下文
 
 
 class TaskCreatedResponse(BaseModel):

@@ -2,6 +2,9 @@
 import logging
 from typing import AsyncGenerator, Any
 
+from langgraph.graph.state import CompiledStateGraph
+from langchain_core.runnables import RunnableConfig
+
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +35,7 @@ def _extract_text(content: Any) -> str:
 
 
 async def parse_agent_events(
-    agent, agent_input, config: dict,
+    agent: CompiledStateGraph, agent_input, config: RunnableConfig,
 ) -> AsyncGenerator[tuple[str, dict], None]:
     """
     将 agent.astream() 的输出解析为结构化事件元组 (event_type, data)。

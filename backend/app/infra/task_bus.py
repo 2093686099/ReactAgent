@@ -1,7 +1,7 @@
 # backend/app/infra/task_bus.py
 import json
 import logging
-from typing import AsyncGenerator
+from typing import AsyncGenerator, TypedDict
 from app.infra.redis import redis_manager
 from app.config import settings
 
@@ -13,6 +13,13 @@ STATUS_INTERRUPTED = "interrupted"
 STATUS_COMPLETED = "completed"
 STATUS_ERROR = "error"
 TERMINAL_STATUSES = {STATUS_INTERRUPTED, STATUS_COMPLETED, STATUS_ERROR}
+
+
+class TaskMeta(TypedDict):
+    task_id: str
+    user_id: str
+    session_id: str
+    status: str
 
 
 def _events_key(task_id: str) -> str:
@@ -32,7 +39,7 @@ async def _client():
 async def create_task_meta(task_id: str, user_id: str, session_id: str) -> None:
     """登记 task 元数据"""
     client = await _client()
-    meta = {
+    meta: TaskMeta = {
         "task_id": task_id,
         "user_id": user_id,
         "session_id": session_id,
@@ -41,7 +48,7 @@ async def create_task_meta(task_id: str, user_id: str, session_id: str) -> None:
     await client.set(_meta_key(task_id), json.dumps(meta), ex=settings.task_ttl)
 
 
-async def get_task_meta(task_id: str) -> dict | None:
+async def get_task_meta(task_id: str) -> TaskMeta | None:
     client = await _client()
     raw = await client.get(_meta_key(task_id))
     return json.loads(raw) if raw else None
