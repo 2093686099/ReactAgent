@@ -5,11 +5,11 @@
 分 6 步走，每步可独立验证。前 3 步完成后就能跑通后端，第 4 步开始做前端。
 
 ```
-Step 1: 搭建项目骨架（目录 + 配置 + 依赖）
-Step 2: 迁移基础设施层（DB/Redis/LLM）
-Step 3: 迁移核心业务层（Agent/Tools/HITL） + 路由层 + 后台任务 + SSE
-Step 4: 搭建 Next.js 前端脚手架
-Step 5: 实现聊天 + HITL + 会话管理 UI
+Step 1: ✅ 搭建项目骨架（目录 + 配置 + 依赖）
+Step 2: ✅ 迁移基础设施层（DB/Redis/LLM）
+Step 3: ✅ 迁移核心业务层（Agent/Tools/HITL） + 路由层 + 后台任务 + SSE
+Step 4: 搭建 Next.js 前端脚手架 + 后端 JWT 认证
+Step 5: 实现聊天 + HITL + 会话管理 UI + 前端认证（NextAuth.js）
 Step 6: 清理旧代码，更新 CLAUDE.md
 ```
 

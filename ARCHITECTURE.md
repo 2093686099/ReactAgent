@@ -353,6 +353,208 @@ AI 消息采用 segments 数组，文本与工具调用按时间交错排列在*
 
 ---
 
-## 迁移路径
+## 前端技术方案
+
+### Server / Client Component 边界
+
+Next.js App Router 要求明确划分 Server Component (SC) 和 Client Component (CC)。聊天应用本质高交互，RSC 的价值主要在 layout 层数据预取，而非组件级服务端渲染。
+
+| 组件 | 类型 | 理由 |
+|------|------|------|
+| `layout.tsx` | **SC** | 布局框架，无交互，可在服务端渲染 |
+| `page.tsx` | **SC** | 数据获取入口，并行请求会话列表 + 活跃会话 |
+| `Sidebar/SessionList` | CC | 点击交互、当前选中状态 |
+| `Sidebar/NewChatButton` | CC | 点击事件 |
+| `ChatPanel` | CC | SSE 流式状态管理 |
+| `MessageBubble` | CC | 在 ChatPanel 内，共享流式状态 |
+| `StreamingText` | CC | 动态文字动画 |
+| `InputBar` | CC | 表单交互 |
+| `ApprovalCard` | CC | HITL 按钮交互 |
+| `ArgsEditor` | CC | JSON 编辑器（dynamic import） |
+| `TodoPanel` | CC | 实时更新（SSE todo 事件） |
+
+`'use client'` 标记放在 `ChatPanel`、`Sidebar`、`TodoPanel` 三个容器组件上，内部子组件自动继承。`page.tsx` 保持 SC，向下传递最小化数据：
+
+```tsx
+// app/page.tsx (Server Component)
+export default async function Page() {
+  const [sessions, activeId] = await Promise.all([
+    fetchSessions(), fetchActiveSessionId(),
+  ])
+  return (
+    <Layout>
+      <Suspense fallback={<SidebarSkeleton />}>
+        <Sidebar sessions={sessions} activeId={activeId} />
+      </Suspense>
+      <ChatPanel sessionId={activeId} />
+      <Suspense fallback={<TodoSkeleton />}>
+        <TodoPanel />
+      </Suspense>
+    </Layout>
+  )
+}
+```
+
+### Zustand Store 拆分
+
+单一 store 会导致 token 事件更新 messages 时触发 Sidebar、TodoPanel 等不相关组件重渲染。按数据域拆分为 4 个独立 store：
+
+```
+stores/
+  messages.ts   — 消息列表 + 流式 token 追加
+  session.ts    — 会话列表 + 当前选中会话
+  todos.ts      — Agent 任务进度
+  hitl.ts       — HITL 审批状态（当前中断请求 + 用户决策）
+```
+
+各组件只订阅自己关心的 store，配合 Zustand 的 selector 切片避免多余渲染：
+
+```tsx
+const messages = useMessageStore(s => s.messages)
+const todos = useTodoStore(s => s.todos)
+```
+
+### 流式渲染策略
+
+SSE token 事件每 50-100ms 推送一次。如果每次 token 都更新 React state，整个消息列表会重渲染。采用**双模式渲染**：
+
+**正在流式输出的消息** — ref + DOM 操作，不触发 React 重渲染：
+```tsx
+function StreamingText({ onComplete }: { onComplete: (text: string) => void }) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const buffer = useRef("")
+
+  // SSE token 回调直接操作 DOM
+  const appendToken = useCallback((token: string) => {
+    buffer.current += token
+    if (ref.current) ref.current.textContent = buffer.current
+  }, [])
+
+  // 流式结束后同步到 React state
+  const flush = useCallback(() => {
+    onComplete(buffer.current)
+  }, [onComplete])
+
+  return <span ref={ref} />
+}
+```
+
+**历史消息** — React.memo 隔离，content 不变则跳过渲染：
+```tsx
+const MessageBubble = memo(({ message }: Props) => (
+  <div className="message-bubble">
+    <MarkdownRenderer content={message.content} />
+  </div>
+), (prev, next) => prev.message.id === next.message.id
+    && prev.message.content === next.message.content)
+```
+
+### Dynamic Import 规划
+
+以下重组件必须 dynamic import，避免首屏 JS 膨胀：
+
+| 组件 | 预估体积 | 加载时机 |
+|------|----------|----------|
+| `ArgsEditor`（JSON 编辑器） | 50-300KB（取决于选型） | HITL 中断时按需加载 |
+| `MarkdownRenderer`（react-markdown + 代码高亮） | 80-150KB | 首条 AI 消息到达时 |
+
+```tsx
+const ArgsEditor = dynamic(() => import('./ArgsEditor'), {
+  ssr: false,
+  loading: () => <div className="h-40 animate-pulse bg-muted rounded" />,
+})
+
+const MarkdownRenderer = dynamic(() => import('./MarkdownRenderer'))
+```
+
+**推荐选型：**
+- JSON 编辑器：`@uiw/react-json-view` 或简单 `<textarea>` + JSON.parse（避免 Monaco 的 300KB+ 开销）
+- 代码高亮：`shiki`（支持按语言动态加载，主题与 VS Code 一致）
+- SSE 客户端：`@microsoft/fetch-event-source`（支持自定义 headers，方便后续加认证）
+- 数据请求：`swr`（会话列表等 REST 请求的去重、缓存、revalidate）
+
+### 长对话渲染优化
+
+| 消息数 | 策略 |
+|--------|------|
+| < 200 条 | CSS `content-visibility: auto` — 零 JS 成本，浏览器跳过屏幕外元素的布局计算 |
+| > 200 条 | 启用虚拟滚动（`@tanstack/react-virtual`） |
+
+```css
+/* globals.css */
+.message-bubble {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 120px;
+}
+```
+
+Markdown 渲染是 CPU 密集操作，已完成渲染的历史消息通过 `useMemo` 缓存解析结果，避免重复解析。
+
+### SSE 事件分发
+
+一个 task_id 只维护一个 EventSource 连接，多个 hook（useChat、useTodo、useHITL）通过事件分发器订阅不同事件类型：
+
+```
+lib/sse.ts — SSE 连接单例 + 事件分发
+  ├── useChat.ts    订阅 token / tool / done / error
+  ├── useTodo.ts    订阅 todo
+  └── useHITL.ts    订阅 hitl
+```
+
+避免多个组件各自创建 EventSource 导致重复连接。
+
+### 认证方案
+
+当前 `deps.py` 的 `get_current_user()` 返回固定 `default_user_id`，无认证。生产环境需要完整的认证链路。
+
+**方案：JWT + NextAuth.js**
+
+```
+┌──────────┐     ┌──────────────┐     ┌──────────────┐
+│  浏览器   │────▶│  NextAuth.js │────▶│  OAuth/凭证   │
+│          │◀────│  (Next.js)   │◀────│  Provider    │
+└────┬─────┘     └──────┬───────┘     └──────────────┘
+     │                  │
+     │ Cookie/Session   │ JWT (签发)
+     │                  │
+     ▼                  ▼
+┌──────────┐     ┌──────────────┐
+│ API 请求  │────▶│  FastAPI     │
+│ Authorization:  │  验证 JWT    │
+│ Bearer <token>  │  get_current │
+└──────────┘     │  _user()     │
+                 └──────────────┘
+```
+
+**后端改动（Step 4）：**
+- `deps.py`：`get_current_user()` 从 `Authorization: Bearer <token>` 解析 JWT，提取 `user_id`
+- 新增 `app/core/auth.py`：JWT 验证逻辑（`python-jose` 或 `PyJWT`）
+- `config.py`：新增 `jwt_secret`、`jwt_algorithm` 配置
+- 未携带 token 的请求返回 401
+
+**前端改动（Step 5）：**
+- NextAuth.js 配置（Credentials Provider 起步，后续可加 OAuth）
+- `lib/api.ts`：所有请求自动附加 `Authorization` header
+- `@microsoft/fetch-event-source`：SSE 连接携带认证 header（原生 EventSource 不支持自定义 header，这也是推荐此库的原因）
+- 登录页面 + auth middleware 保护路由
+
+**数据隔离：**
+- Redis key 已按 `user_id` 隔离（`session:{user_id}:{session_id}`）
+- PostgreSQL checkpointer 按 `thread_id=session_id` 隔离
+- 长期记忆按 `namespace=("memories", user_id)` 隔离
+- 认证后 `user_id` 从 JWT 注入，无法伪造
+
+---
+
+## 迁移路径（更新）
+
+```
+Step 1: ✅ 搭建项目骨架（目录 + 配置 + 依赖）
+Step 2: ✅ 迁移基础设施层（DB/Redis/LLM）
+Step 3: ✅ 迁移核心业务层 + 路由层 + SSE
+Step 4: 搭建 Next.js 前端脚手架 + 后端认证
+Step 5: 实现聊天 + HITL + 会话管理 UI + 前端认证
+Step 6: 清理旧代码，更新 CLAUDE.md
+```
 
 详见 `MIGRATION_GUIDE.md`（6 步迁移指南，含完整代码）。
