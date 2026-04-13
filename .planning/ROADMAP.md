@@ -46,7 +46,11 @@ Progressive teaching project: build a production-grade ReAct Agent step by step.
   3. 用户消息和 AI 消息有明确的视觉区分（不同气泡样式/对齐方式）
   4. 新消息到达时聊天区域自动滚动到底部，发送中显示加载状态
   5. 请求失败时用户看到错误信息提示
-**Plans**: TBD
+**Plans:** 3 plans
+Plans:
+- [ ] 08-01-PLAN.md — Next.js 脚手架 + 设计系统 + 类型/Store/API/SSE hooks
+- [ ] 08-02-PLAN.md — 全部 UI 组件（布局、消息气泡、输入框、Markdown 渲染）
+- [ ] 08-03-PLAN.md — 页面装配连接 + 错误处理 + 端到端验证
 **UI hint**: yes
 
 ### Phase 09: Tool Call UX + HITL Approval
@@ -101,7 +105,7 @@ Note: Phase 11 (Todo) depends only on Phase 08, can potentially parallel with 09
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1-7 | v1.0 | - | Complete | 2026-04-12 |
-| 8. SSE Chat Foundation | v2.0 | 0/? | Not started | - |
+| 8. SSE Chat Foundation | v2.0 | 0/3 | Planning done | - |
 | 9. Tool Call UX + HITL | v2.0 | 0/? | Not started | - |
 | 10. Session Management | v2.0 | 0/? | Not started | - |
 | 11. Todo Panel | v2.0 | 0/? | Not started | - |
