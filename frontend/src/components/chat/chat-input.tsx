@@ -90,7 +90,11 @@ export function ChatInput({ onSend }: ChatInputProps) {
             disabled={!canSend}
             className="absolute bottom-2 right-2 h-8 w-8 rounded-md bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] disabled:bg-transparent disabled:text-[var(--color-text-quaternary)]"
           >
-            {disabled ? <Loader2 className="animate-spin" size={16} /> : <ArrowUp size={16} />}
+            {isSubmitting || status === "sending" ? (
+              <Loader2 className="animate-spin" size={16} />
+            ) : (
+              <ArrowUp size={16} />
+            )}
           </Button>
         </div>
       </div>

@@ -53,8 +53,11 @@ function MessageBubbleInner({ message, isStreaming = false }: MessageBubbleProps
 
 export const MessageBubble = memo(
   MessageBubbleInner,
-  (prev, next) =>
-    prev.message.id === next.message.id &&
-    prev.message.segments.length === next.message.segments.length &&
-    prev.isStreaming === next.isStreaming
+  (prev, next) => {
+    if (next.isStreaming) return false;
+    return (
+      prev.message.id === next.message.id &&
+      prev.message.segments.length === next.message.segments.length
+    );
+  }
 );

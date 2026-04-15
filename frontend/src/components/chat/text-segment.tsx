@@ -32,7 +32,7 @@ function TextSegmentInner({ content, isStreaming = false }: TextSegmentProps) {
             </a>
           ),
           code: ({ children, className, ...props }) => {
-            const isBlock = Boolean(className?.includes("language-"));
+            const isBlock = Boolean(className);
             if (!isBlock) {
               return (
                 <code
