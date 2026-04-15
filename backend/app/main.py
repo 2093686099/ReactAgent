@@ -1,7 +1,9 @@
 # backend/app/main.py
 from __future__ import annotations
 
+import asyncio
 import logging
+import sys
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +14,16 @@ from app.infra.redis import redis_manager
 from app.core.exceptions import BusinessError
 from app.api.deps import get_task_service
 from app.api import chat, sessions, memory
+
+
+def configure_windows_event_loop_policy() -> None:
+    """psycopg async 在 Windows 需要 selector event loop。"""
+    if sys.platform != "win32":
+        return
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+
+configure_windows_event_loop_policy()
 
 
 def setup_logging() -> None:

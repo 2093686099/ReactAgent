@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import json
+from urllib.request import urlopen
 from langchain_core.tools import tool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from app.config import settings
@@ -12,6 +14,25 @@ logger = logging.getLogger(__name__)
 
 _mcp_tools_cache: list | None = None
 _mcp_lock: asyncio.Lock | None = None
+
+
+def _is_amap_key_valid() -> bool:
+    """轻量检查高德 MCP key 是否可用。"""
+    if not settings.amap_maps_api_key:
+        return False
+    url = f"https://mcp.amap.com/mcp?key={settings.amap_maps_api_key}"
+    try:
+        with urlopen(url, timeout=8) as response:
+            body = response.read().decode("utf-8", errors="ignore")
+            data = json.loads(body)
+            # 高德错误格式：{"status":"0","info":"INVALID_USER_KEY","infocode":"10001"}
+            if isinstance(data, dict) and data.get("status") == "0":
+                logger.warning(f"高德 MCP key 无效：info={data.get('info')} infocode={data.get('infocode')}")
+                return False
+            return True
+    except Exception as exc:
+        logger.warning(f"高德 MCP key 可用性检查失败，将禁用 researcher：{exc}")
+        return False
 
 
 async def get_mcp_tools():
@@ -24,6 +45,9 @@ async def get_mcp_tools():
         _mcp_lock = asyncio.Lock()
     async with _mcp_lock:
         if _mcp_tools_cache is not None:
+            return _mcp_tools_cache
+        if not _is_amap_key_valid():
+            _mcp_tools_cache = []
             return _mcp_tools_cache
         client = MultiServerMCPClient({
             "amap-maps-streamableHTTP": {

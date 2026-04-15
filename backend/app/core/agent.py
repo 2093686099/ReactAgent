@@ -22,6 +22,16 @@ class AgentService:
         mcp_tools = await get_mcp_tools()
         custom_tools = get_custom_tools()
         interrupt_on = get_hitl_config(custom_tools)
+        subagents = []
+        if mcp_tools:
+            subagents = [
+                SubAgent(
+                    name="researcher",
+                    description="负责使用高德地图工具进行地理信息搜索、路线规划和周边查询",
+                    system_prompt="你是一个地理信息调研助手，擅长使用地图工具查询地点、路线和周边信息。将调研结果整理为结构化摘要返回。",
+                    tools=mcp_tools,
+                ),
+            ]
 
         checkpointer = self._checkpointer or db.checkpointer
         store = self._store or db.store
@@ -41,12 +51,5 @@ class AgentService:
             checkpointer=checkpointer,
             store=store,
             backend=StoreBackend(),
-            subagents=[
-                SubAgent(
-                    name="researcher",
-                    description="负责使用高德地图工具进行地理信息搜索、路线规划和周边查询",
-                    system_prompt="你是一个地理信息调研助手，擅长使用地图工具查询地点、路线和周边信息。将调研结果整理为结构化摘要返回。",
-                    tools=mcp_tools,
-                ),
-            ],
+            subagents=subagents,
         )

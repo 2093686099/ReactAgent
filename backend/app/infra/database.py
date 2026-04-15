@@ -25,6 +25,9 @@ class Database:
         await self.pool.open()
         self.checkpointer = AsyncPostgresSaver(self.pool)
         self.store = AsyncPostgresStore(self.pool)
+        # 首次启动自动创建 LangGraph 所需表结构（幂等）。
+        await self.checkpointer.setup()
+        await self.store.setup()
 
     async def disconnect(self):
         if self.pool:
