@@ -112,17 +112,26 @@ def initialize_llm(llm_type: str | None = None) -> tuple[ChatOpenAI, OpenAIEmbed
     return llm_chat, llm_embedding
 
 
+_llm_cache: dict[str, tuple[ChatOpenAI, OpenAIEmbeddings]] = {}
+
+
 def get_llm(llm_type: str | None = None) -> tuple[ChatOpenAI, OpenAIEmbeddings]:
     """
-    获取 LLM 实例的封装函数，提供默认值和错误兜底。
+    获取 LLM 实例的封装函数，按 llm_type 缓存复用。
 
     如果传入的 llm_type 初始化失败，且不是默认类型，会回退到默认类型重试。
     """
     llm_type = llm_type or settings.llm_type
+    if llm_type in _llm_cache:
+        return _llm_cache[llm_type]
     try:
-        return initialize_llm(llm_type)
+        result = initialize_llm(llm_type)
     except LLMInitializationError as e:
         if llm_type != settings.llm_type:
             logger.warning(f"{e}，使用默认 LLM 类型 {settings.llm_type} 重试")
-            return initialize_llm(settings.llm_type)
-        raise
+            result = initialize_llm(settings.llm_type)
+            llm_type = settings.llm_type
+        else:
+            raise
+    _llm_cache[llm_type] = result
+    return result
