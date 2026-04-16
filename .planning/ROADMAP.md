@@ -51,7 +51,6 @@ Plans:
 - [ ] 08-01-PLAN.md — Next.js 脚手架 + 设计系统 + 类型/Store/API/SSE hooks
 - [ ] 08-02-PLAN.md — 全部 UI 组件（布局、消息气泡、输入框、Markdown 渲染）
 - [ ] 08-03-PLAN.md — 页面装配连接 + 错误处理 + 端到端验证
-**UI hint**: yes
 
 ### Phase 09: Tool Call UX + HITL Approval
 **Goal**: 用户可以在聊天中看到工具调用状态，并对危险操作进行审批决策
@@ -62,7 +61,11 @@ Plans:
   2. 需要审批的工具调用以卡片形式展示工具名称、参数和描述，用户可以 approve/reject
   3. 用户可以在审批前编辑工具参数，修改后提交
   4. 审批操作后 Agent 继续执行，SSE 流恢复输出新内容
-**Plans**: TBD
+**Plans:** 3 plans
+Plans:
+- [ ] 09-01-PLAN.md — 数据层扩展（HitlSegment 类型 + store actions + resume API + SSE hitl 监听）
+- [ ] 09-02-PLAN.md — UI 组件（ToolPill 工具指示器 + HitlCard 审批卡片 + MessageBubble 更新）
+- [ ] 09-03-PLAN.md — 页面连线（resume 回调 + 状态流转）+ 端到端验证
 **UI hint**: yes
 
 ### Phase 10: Session Management
@@ -106,7 +109,7 @@ Note: Phase 11 (Todo) depends only on Phase 08, can potentially parallel with 09
 |-------|-----------|----------------|--------|-----------|
 | 1-7 | v1.0 | - | Complete | 2026-04-12 |
 | 8. SSE Chat Foundation | v2.0 | 0/3 | Planning done | - |
-| 9. Tool Call UX + HITL | v2.0 | 0/? | Not started | - |
+| 9. Tool Call UX + HITL | v2.0 | 0/3 | Planning done | - |
 | 10. Session Management | v2.0 | 0/? | Not started | - |
 | 11. Todo Panel | v2.0 | 0/? | Not started | - |
 | 12. Resilience | v2.0 | 0/? | Not started | - |
