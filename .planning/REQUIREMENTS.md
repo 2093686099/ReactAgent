@@ -20,11 +20,11 @@ Requirements for Next.js 前端。Each maps to roadmap phases.
 
 ### Tool & HITL
 
-- [ ] **HITL-01**: AI 消息中内嵌工具调用指示器（segments 模型，显示工具名称和 calling/done 状态）
-- [ ] **HITL-02**: 收到 hitl 事件时展示审批卡片（工具名称、参数、描述）
-- [ ] **HITL-03**: 用户可以 approve 工具调用
-- [ ] **HITL-04**: 用户可以 reject 工具调用
-- [ ] **HITL-05**: 用户可以 edit 工具参数后提交（修改 args 再 approve）
+- [x] **HITL-01**: AI 消息中内嵌工具调用指示器（segments 模型，显示工具名称和 calling/done 状态）
+- [x] **HITL-02**: 收到 hitl 事件时展示审批卡片（工具名称、参数、描述）
+- [x] **HITL-03**: 用户可以 approve 工具调用
+- [x] **HITL-04**: 用户可以 reject 工具调用
+- [x] **HITL-05**: 用户可以 edit 工具参数后提交（修改 args 再 approve）
 - [ ] **HITL-06**: 审批后恢复 agent 执行（POST /resume），SSE 流继续
 
 ### Session
@@ -77,11 +77,11 @@ Deferred to v3.0+。Tracked but not in current roadmap.
 | CHAT-06 | Phase 08 | Pending |
 | CHAT-07 | Phase 08 | Pending |
 | CHAT-08 | Phase 10 | Pending |
-| HITL-01 | Phase 09 | Pending |
-| HITL-02 | Phase 09 | Pending |
-| HITL-03 | Phase 09 | Pending |
-| HITL-04 | Phase 09 | Pending |
-| HITL-05 | Phase 09 | Pending |
+| HITL-01 | Phase 09 | Complete |
+| HITL-02 | Phase 09 | Complete |
+| HITL-03 | Phase 09 | Complete |
+| HITL-04 | Phase 09 | Complete |
+| HITL-05 | Phase 09 | Complete |
 | HITL-06 | Phase 09 | Pending |
 | SESS-01 | Phase 10 | Pending |
 | SESS-02 | Phase 10 | Pending |
