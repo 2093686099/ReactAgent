@@ -4,11 +4,23 @@ import { useEffect } from "react";
 import { API_BASE } from "@/lib/api";
 import { useChatStore } from "@/stores/chat-store";
 
+function formatHitlDescription(toolName: string, args?: Record<string, unknown>): string {
+  if (!args || Object.keys(args).length === 0) {
+    return `Agent 想要调用 ${toolName}`;
+  }
+  const entries = Object.entries(args).slice(0, 2);
+  const summary = entries
+    .map(([, v]) => (typeof v === "string" ? v : JSON.stringify(v)))
+    .join("、");
+  return `Agent 想要调用 ${toolName}：${summary}`;
+}
+
 export function useSSE(taskId: string | null): void {
   const appendToken = useChatStore((state) => state.appendToken);
   const addToolSegment = useChatStore((state) => state.addToolSegment);
   const updateToolSegment = useChatStore((state) => state.updateToolSegment);
   const finishMessage = useChatStore((state) => state.finishMessage);
+  const addHitlSegment = useChatStore((state) => state.addHitlSegment);
   const setError = useChatStore((state) => state.setError);
   const setStatus = useChatStore((state) => state.setStatus);
 
@@ -63,6 +75,15 @@ export function useSSE(taskId: string | null): void {
       }
     });
 
+    eventSource.addEventListener("hitl", (event) => {
+      const payload = JSON.parse((event as MessageEvent).data);
+      const actionReq = payload.action_requests?.[0];
+      const toolName = actionReq?.name ?? "unknown";
+      const description = formatHitlDescription(toolName, actionReq?.args);
+      addHitlSegment(toolName, description, taskId);
+      setStatus("interrupted");
+    });
+
     eventSource.onerror = () => {
       eventSource.close();
       if (!receivedTerminalEvent) {
@@ -80,6 +101,7 @@ export function useSSE(taskId: string | null): void {
     appendToken,
     addToolSegment,
     updateToolSegment,
+    addHitlSegment,
     finishMessage,
     setError,
     setStatus,
