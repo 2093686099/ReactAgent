@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { ChatStatus, Message, ToolSegment } from "@/lib/types";
+import type { ChatStatus, HitlStatus, Message, ToolSegment } from "@/lib/types";
 
 type ChatState = {
   messages: Message[];
@@ -14,6 +14,8 @@ type ChatState = {
   updateToolSegment: (name: string, status: ToolSegment["status"]) => void;
   finishMessage: () => void;
   setError: (message: string) => void;
+  addHitlSegment: (toolName: string, description: string, taskId: string) => void;
+  updateHitlStatus: (taskId: string, status: HitlStatus) => void;
   setStatus: (status: ChatStatus) => void;
   setCurrentTaskId: (taskId: string | null) => void;
   reset: () => void;
@@ -160,6 +162,53 @@ export const useChatStore = create<ChatState>((set) => ({
 
       const segments = lastMessage.segments.map((segment) => {
         if (segment.type === "tool" && segment.name === name) {
+          return { ...segment, status };
+        }
+        return segment;
+      });
+
+      nextMessages[nextMessages.length - 1] = { ...lastMessage, segments };
+      return { messages: nextMessages };
+    }),
+
+  addHitlSegment: (toolName, description, taskId) =>
+    set((state) => {
+      if (!state.messages.length) {
+        return {};
+      }
+
+      const nextMessages = [...state.messages];
+      const lastMessage = nextMessages[nextMessages.length - 1];
+      if (lastMessage.role !== "assistant") {
+        return {};
+      }
+
+      const updatedMessage: Message = {
+        ...lastMessage,
+        segments: [
+          ...lastMessage.segments,
+          { type: "hitl", toolName, description, status: "pending", taskId },
+          { type: "text", content: "" },
+        ],
+      };
+      nextMessages[nextMessages.length - 1] = updatedMessage;
+      return { messages: nextMessages };
+    }),
+
+  updateHitlStatus: (taskId, status) =>
+    set((state) => {
+      if (!state.messages.length) {
+        return {};
+      }
+
+      const nextMessages = [...state.messages];
+      const lastMessage = nextMessages[nextMessages.length - 1];
+      if (lastMessage.role !== "assistant") {
+        return {};
+      }
+
+      const segments = lastMessage.segments.map((segment) => {
+        if (segment.type === "hitl" && segment.taskId === taskId) {
           return { ...segment, status };
         }
         return segment;

@@ -6,7 +6,17 @@ export type ToolSegment = {
   status: "calling" | "done";
 };
 
-export type Segment = TextSegment | ToolSegment;
+export type HitlStatus = "pending" | "approved" | "rejected" | "feedback";
+
+export type HitlSegment = {
+  type: "hitl";
+  toolName: string;
+  description: string;
+  status: HitlStatus;
+  taskId: string;
+};
+
+export type Segment = TextSegment | ToolSegment | HitlSegment;
 
 export interface Message {
   id: string;
@@ -15,7 +25,7 @@ export interface Message {
   timestamp: number;
 }
 
-export type ChatStatus = "idle" | "sending" | "streaming" | "error";
+export type ChatStatus = "idle" | "sending" | "streaming" | "interrupted" | "error";
 
 export interface InvokeResponse {
   task_id: string;

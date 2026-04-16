@@ -19,3 +19,29 @@ export async function invokeChat(
 
   return response.json() as Promise<InvokeResponse>;
 }
+
+export async function resumeChat(
+  taskId: string,
+  responseType: "approve" | "reject",
+  message?: string
+): Promise<InvokeResponse> {
+  const body: Record<string, unknown> = {
+    task_id: taskId,
+    response_type: responseType,
+  };
+  if (responseType === "reject" && message) {
+    body.args = { message };
+  }
+  const response = await fetch(`${API_BASE}/api/chat/resume`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `HTTP ${response.status}`);
+  }
+
+  return response.json() as Promise<InvokeResponse>;
+}
