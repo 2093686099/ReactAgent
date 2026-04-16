@@ -47,6 +47,10 @@ AI Agent 智能体助手。后端已完成迁移（Step 1-3），前端待搭建
 
 完整架构设计见 `ARCHITECTURE.md`，迁移指南见 `MIGRATION_GUIDE.md`。
 
+## Design System
+
+前端 UI 必须严格遵循 `DESIGN.md`（Linear 风格设计系统）。所有颜色、字重、间距、圆角、字体特性等 token 以该文件为准，不得自行发挥。
+
 ## Tech Stack
 
 - **Agent**: `deepagents` 库的 `create_deep_agent`（LangGraph），支持子 Agent、HITL、任务规划、文件操作

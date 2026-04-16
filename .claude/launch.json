@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000,
+      "cwd": "frontend"
+    },
+    {
+      "name": "backend",
+      "runtimeExecutable": "/Users/neuron/文稿/2 私人/ReActAgents/.venv/bin/python",
+      "runtimeArgs": ["-m", "app.main"],
+      "port": 8001,
+      "cwd": "backend"
+    }
+  ]
+}
