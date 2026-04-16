@@ -61,9 +61,9 @@ Plans:
   2. 需要审批的工具调用以卡片形式展示工具名称、参数和描述，用户可以 approve/reject
   3. 用户可以在审批前编辑工具参数，修改后提交
   4. 审批操作后 Agent 继续执行，SSE 流恢复输出新内容
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 Plans:
-- [ ] 09-01-PLAN.md — 数据层扩展（HitlSegment 类型 + store actions + resume API + SSE hitl 监听）
+- [x] 09-01-PLAN.md — 数据层扩展（HitlSegment 类型 + store actions + resume API + SSE hitl 监听）
 - [ ] 09-02-PLAN.md — UI 组件（ToolPill 工具指示器 + HitlCard 审批卡片 + MessageBubble 更新）
 - [ ] 09-03-PLAN.md — 页面连线（resume 回调 + 状态流转）+ 端到端验证
 **UI hint**: yes
