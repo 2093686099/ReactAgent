@@ -1,0 +1,112 @@
+"use client";
+
+import { useState } from "react";
+import { Check, X, MessageSquare, Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import type { HitlSegment } from "@/lib/types";
+
+type HitlCardProps = {
+  segment: HitlSegment;
+  onApprove: () => void;
+  onReject: () => void;
+  onFeedback: (message: string) => void;
+};
+
+export function HitlCard({ segment, onApprove, onReject, onFeedback }: HitlCardProps) {
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+
+  if (segment.status !== "pending") {
+    const config = {
+      approved: { icon: <Check size={14} className="text-emerald-500" />, label: `已批准 ${segment.toolName}` },
+      rejected: { icon: <X size={14} className="text-[var(--color-error)]" />, label: `已拒绝 ${segment.toolName}` },
+      feedback: { icon: <MessageSquare size={14} className="text-[var(--color-accent)]" />, label: `已反馈 ${segment.toolName}` },
+    }[segment.status];
+
+    return (
+      <div className="my-1">
+        <span className="inline-flex items-center gap-1.5 rounded-md border border-[rgba(255,255,255,0.08)] bg-white/[0.05] px-2 py-0.5 text-[13px] text-[var(--color-text-tertiary)]">
+          {config.icon}
+          {config.label}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="my-2 rounded-lg border border-[var(--color-border-standard)] bg-[var(--color-bg-surface)] p-4">
+      <div className="flex items-center gap-2">
+        <Shield size={16} className="text-[var(--color-accent)]" />
+        <span className="text-[14px] font-[510] text-[var(--color-text-primary)]">
+          需要审批
+        </span>
+      </div>
+
+      <p className="mt-2 text-[15px] text-[var(--color-text-secondary)]">
+        {segment.description}
+      </p>
+
+      {showFeedback ? (
+        <div className="mt-3">
+          <Textarea
+            className="border-[var(--color-border-standard)] bg-[rgba(255,255,255,0.02)] text-[15px] text-[var(--color-text-secondary)] placeholder:text-[var(--color-text-quaternary)]"
+            placeholder="告诉 Agent 你的修改意见..."
+            rows={3}
+            value={feedbackText}
+            onChange={(e) => setFeedbackText(e.target.value)}
+          />
+          <div className="mt-2 flex items-center gap-2">
+            <Button
+              size="sm"
+              className="bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)]"
+              disabled={!feedbackText.trim()}
+              onClick={() => onFeedback(feedbackText.trim())}
+            >
+              发送反馈
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setShowFeedback(false);
+                setFeedbackText("");
+              }}
+            >
+              取消
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 flex items-center gap-2">
+          <Button
+            size="sm"
+            className="bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)]"
+            onClick={onApprove}
+          >
+            <Check size={14} />
+            批准
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-[var(--color-text-secondary)] hover:bg-white/[0.05]"
+            onClick={() => setShowFeedback(true)}
+          >
+            <MessageSquare size={14} />
+            反馈
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-[var(--color-error)] hover:bg-[var(--color-error)]/10"
+            onClick={onReject}
+          >
+            <X size={14} />
+            拒绝
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}

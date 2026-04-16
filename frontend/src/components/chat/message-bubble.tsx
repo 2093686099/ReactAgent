@@ -2,13 +2,24 @@ import { memo } from "react";
 import { Sparkles } from "lucide-react";
 import type { Message } from "@/lib/types";
 import { TextSegment } from "@/components/chat/text-segment";
+import { ToolPill } from "@/components/chat/tool-pill";
+import { HitlCard } from "@/components/chat/hitl-card";
 
 type MessageBubbleProps = {
   message: Message;
   isStreaming?: boolean;
+  onApprove?: (taskId: string) => void;
+  onReject?: (taskId: string) => void;
+  onFeedback?: (taskId: string, message: string) => void;
 };
 
-function MessageBubbleInner({ message, isStreaming = false }: MessageBubbleProps) {
+function MessageBubbleInner({
+  message,
+  isStreaming = false,
+  onApprove,
+  onReject,
+  onFeedback,
+}: MessageBubbleProps) {
   if (message.role === "user") {
     const content =
       message.segments.find((segment) => segment.type === "text")?.content ?? "";
@@ -27,11 +38,26 @@ function MessageBubbleInner({ message, isStreaming = false }: MessageBubbleProps
       ? -1
       : message.segments.length - 1 - lastTextSegmentIndex;
 
+  const hasPendingHitl = message.segments.some(
+    (s) => s.type === "hitl" && s.status === "pending"
+  );
+
   return (
     <div className="mr-auto w-full max-w-full py-1">
       {message.segments.map((segment, index) => {
-        if (segment.type !== "text") {
-          return null;
+        if (segment.type === "tool") {
+          return <ToolPill key={`${message.id}-${index}`} segment={segment} />;
+        }
+        if (segment.type === "hitl") {
+          return (
+            <HitlCard
+              key={`${message.id}-${index}`}
+              segment={segment}
+              onApprove={() => onApprove?.(segment.taskId)}
+              onReject={() => onReject?.(segment.taskId)}
+              onFeedback={(msg) => onFeedback?.(segment.taskId, msg)}
+            />
+          );
         }
         const streamingSegment = isStreaming && index === resolvedIndex;
         return (
@@ -42,7 +68,7 @@ function MessageBubbleInner({ message, isStreaming = false }: MessageBubbleProps
           />
         );
       })}
-      {!isStreaming ? (
+      {!isStreaming && !hasPendingHitl ? (
         <div className="mt-2 text-[var(--color-text-quaternary)]">
           <Sparkles size={16} />
         </div>
@@ -55,6 +81,10 @@ export const MessageBubble = memo(
   MessageBubbleInner,
   (prev, next) => {
     if (next.isStreaming) return false;
+    const hasPendingHitl = next.message.segments.some(
+      (s) => s.type === "hitl" && s.status === "pending"
+    );
+    if (hasPendingHitl) return false;
     return (
       prev.message.id === next.message.id &&
       prev.message.segments.length === next.message.segments.length
