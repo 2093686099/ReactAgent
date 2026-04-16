@@ -8,7 +8,7 @@ import { MessageList } from "@/components/chat/message-list";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAutoScroll } from "@/hooks/use-auto-scroll";
 import { useSSE } from "@/hooks/use-sse";
-import { invokeChat } from "@/lib/api";
+import { invokeChat, resumeChat } from "@/lib/api";
 import { useChatStore } from "@/stores/chat-store";
 
 export default function ChatPage() {
@@ -23,6 +23,7 @@ export default function ChatPage() {
   const setStatus = useChatStore((state) => state.setStatus);
   const setCurrentTaskId = useChatStore((state) => state.setCurrentTaskId);
   const setError = useChatStore((state) => state.setError);
+  const updateHitlStatus = useChatStore((state) => state.updateHitlStatus);
 
   useSSE(currentTaskId);
 
@@ -38,6 +39,48 @@ export default function ChatPage() {
     });
     return () => cancelAnimationFrame(id);
   }, [messages, status, shouldAutoScroll, scrollToBottom]);
+
+  const handleApprove = async (taskId: string) => {
+    updateHitlStatus(taskId, "approved");
+    setStatus("sending");
+    try {
+      await resumeChat(taskId, "approve");
+      setStatus("streaming");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "恢复执行失败";
+      setError(message);
+      toast.error("审批操作失败，请重试");
+    }
+  };
+
+  const handleReject = async (taskId: string) => {
+    updateHitlStatus(taskId, "rejected");
+    setStatus("sending");
+    try {
+      await resumeChat(taskId, "reject");
+      setStatus("streaming");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "恢复执行失败";
+      setError(message);
+      toast.error("审批操作失败，请重试");
+    }
+  };
+
+  const handleFeedback = async (taskId: string, feedbackMessage: string) => {
+    updateHitlStatus(taskId, "feedback");
+    setStatus("sending");
+    try {
+      await resumeChat(taskId, "reject", feedbackMessage);
+      setStatus("streaming");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "恢复执行失败";
+      setError(message);
+      toast.error("反馈提交失败，请重试");
+    }
+  };
 
   const handleSend = async (text: string) => {
     addUserMessage(text);
@@ -70,6 +113,9 @@ export default function ChatPage() {
           errorMessage={errorMessage}
           scrollRef={scrollRef}
           onScroll={onScroll}
+          onApprove={handleApprove}
+          onReject={handleReject}
+          onFeedback={handleFeedback}
         />
         <ChatInput onSend={handleSend} />
       </ChatArea>

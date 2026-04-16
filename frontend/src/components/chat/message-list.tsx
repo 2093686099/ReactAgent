@@ -9,6 +9,9 @@ type MessageListProps = {
   errorMessage: string | null;
   scrollRef: RefObject<HTMLDivElement | null>;
   onScroll: () => void;
+  onApprove?: (taskId: string) => void;
+  onReject?: (taskId: string) => void;
+  onFeedback?: (taskId: string, message: string) => void;
 };
 
 export function MessageList({
@@ -17,6 +20,9 @@ export function MessageList({
   errorMessage,
   scrollRef,
   onScroll,
+  onApprove,
+  onReject,
+  onFeedback,
 }: MessageListProps) {
   const lastMessage = messages[messages.length - 1];
   const streamingMessageId =
@@ -36,6 +42,9 @@ export function MessageList({
                 key={message.id}
                 message={message}
                 isStreaming={streamingMessageId === message.id}
+                onApprove={onApprove}
+                onReject={onReject}
+                onFeedback={onFeedback}
               />
             ))}
             {status === "sending" ? <StreamingDots /> : null}
