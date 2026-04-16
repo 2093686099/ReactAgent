@@ -29,7 +29,7 @@ Progressive teaching project: build a production-grade ReAct Agent step by step.
 **Milestone Goal:** 为 AI Agent 个人助手构建现代化 Web 前端，对接已完成的 FastAPI 后端
 
 - [ ] **Phase 08: SSE Chat Foundation** - Next.js 项目脚手架 + SSE 流式聊天核心
-- [ ] **Phase 09: Tool Call UX + HITL Approval** - 工具调用指示器 + 人工审批卡片
+- [x] **Phase 09: Tool Call UX + HITL Approval** - 工具调用指示器 + 人工审批卡片 (completed 2026-04-16)
 - [ ] **Phase 10: Session Management** - 会话侧边栏 + 历史消息加载
 - [ ] **Phase 11: Todo Panel** - Agent 任务规划面板
 - [ ] **Phase 12: Resilience** - SSE 断线重连 + HITL 状态持久化
@@ -61,11 +61,11 @@ Plans:
   2. 需要审批的工具调用以卡片形式展示工具名称、参数和描述，用户可以 approve/reject
   3. 用户可以在审批前编辑工具参数，修改后提交
   4. 审批操作后 Agent 继续执行，SSE 流恢复输出新内容
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 Plans:
 - [x] 09-01-PLAN.md — 数据层扩展（HitlSegment 类型 + store actions + resume API + SSE hitl 监听）
 - [x] 09-02-PLAN.md — UI 组件（ToolPill 工具指示器 + HitlCard 审批卡片 + MessageBubble 更新）
-- [ ] 09-03-PLAN.md — 页面连线（resume 回调 + 状态流转）+ 端到端验证
+- [x] 09-03-PLAN.md — 页面连线（resume 回调 + 状态流转）+ 端到端验证
 **UI hint**: yes
 
 ### Phase 10: Session Management

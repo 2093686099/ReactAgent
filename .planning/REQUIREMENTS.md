@@ -25,7 +25,7 @@ Requirements for Next.js 前端。Each maps to roadmap phases.
 - [x] **HITL-03**: 用户可以 approve 工具调用
 - [x] **HITL-04**: 用户可以 reject 工具调用
 - [x] **HITL-05**: 用户可以 edit 工具参数后提交（修改 args 再 approve）
-- [ ] **HITL-06**: 审批后恢复 agent 执行（POST /resume），SSE 流继续
+- [x] **HITL-06**: 审批后恢复 agent 执行（POST /resume），SSE 流继续
 
 ### Session
 
@@ -82,7 +82,7 @@ Deferred to v3.0+。Tracked but not in current roadmap.
 | HITL-03 | Phase 09 | Complete |
 | HITL-04 | Phase 09 | Complete |
 | HITL-05 | Phase 09 | Complete |
-| HITL-06 | Phase 09 | Pending |
+| HITL-06 | Phase 09 | Complete |
 | SESS-01 | Phase 10 | Pending |
 | SESS-02 | Phase 10 | Pending |
 | SESS-03 | Phase 10 | Pending |
