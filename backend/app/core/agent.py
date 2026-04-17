@@ -18,7 +18,7 @@ class AgentService:
         self._store = store
 
     async def create_agent(self, *, system_prompt: str | None = None):
-        llm_chat, _ = get_llm()
+        llm_chat = get_llm()
         mcp_tools = await get_mcp_tools()
         custom_tools = get_custom_tools()
         interrupt_on = get_hitl_config(custom_tools)

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 import os
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
 from app.config import settings
 
 
@@ -23,33 +23,26 @@ def _model_configs() -> dict:
             "base_url": settings.openai_base_url,
             "api_key": settings.openai_api_key,
             "chat_model": "gpt-4o-mini",
-            "embedding_model": "text-embedding-3-small",
         },
         "qwen": {
             "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
             "api_key": settings.dashscope_api_key,
             "chat_model": "qwen-max",
-            "embedding_model": "text-embedding-v1",
         },
         "ollama": {
             "base_url": "http://localhost:11434/v1",
             "api_key": "ollama",
             "chat_model": "llama3.1:8b",
-            "embedding_model": "nomic-embed-text:latest",
         },
         "modelscope": {
             "base_url": "https://api-inference.modelscope.cn/v1",
             "api_key": settings.modelscope_api_key,
             "chat_model": "MiniMax/MiniMax-M2.5",
-            "embedding_model": "BAAI/bge-m3",
         },
         "tencent": {
             "base_url": "https://tokenhub.tencentmaas.com/v1",
             "api_key": settings.tencent_api_key,
             "chat_model": "glm-5",
-            "embedding_base_url": "https://api-inference.modelscope.cn/v1",
-            "embedding_api_key": settings.modelscope_api_key,
-            "embedding_model": "BAAI/bge-m3",
         },
     }
 
@@ -58,16 +51,16 @@ class LLMInitializationError(Exception):
     """自定义异常类用于 LLM 初始化错误"""
 
 
-def initialize_llm(llm_type: str | None = None) -> tuple[ChatOpenAI, OpenAIEmbeddings]:
+def initialize_llm(llm_type: str | None = None) -> ChatOpenAI:
     """
     初始化 LLM 实例。
 
     Args:
-        llm_type: LLM 类型，可选值为 'openai' / 'qwen' / 'ollama' / 'modelscope'。
+        llm_type: LLM 类型，可选值为 'openai' / 'qwen' / 'ollama' / 'modelscope' / 'tencent'。
                   省略时使用 settings.llm_type。
 
     Returns:
-        (ChatOpenAI, OpenAIEmbeddings)
+        ChatOpenAI
 
     Raises:
         LLMInitializationError: 当 LLM 初始化失败时抛出
@@ -95,27 +88,18 @@ def initialize_llm(llm_type: str | None = None) -> tuple[ChatOpenAI, OpenAIEmbed
             timeout=30,
             max_retries=2,
         )
-
-        emb_base_url = config.get("embedding_base_url", config["base_url"])
-        emb_api_key = config.get("embedding_api_key", config["api_key"])
-        llm_embedding = OpenAIEmbeddings(
-            base_url=emb_base_url,
-            api_key=emb_api_key,
-            model=config["embedding_model"],
-            deployment=config["embedding_model"],
-        )
     except Exception as e:
         logger.error(f"初始化 LLM 失败: {e}")
         raise LLMInitializationError(f"初始化 LLM 失败: {e}") from e
 
     logger.info(f"成功初始化 {llm_type} LLM")
-    return llm_chat, llm_embedding
+    return llm_chat
 
 
-_llm_cache: dict[str, tuple[ChatOpenAI, OpenAIEmbeddings]] = {}
+_llm_cache: dict[str, ChatOpenAI] = {}
 
 
-def get_llm(llm_type: str | None = None) -> tuple[ChatOpenAI, OpenAIEmbeddings]:
+def get_llm(llm_type: str | None = None) -> ChatOpenAI:
     """
     获取 LLM 实例的封装函数，按 llm_type 缓存复用。
 
