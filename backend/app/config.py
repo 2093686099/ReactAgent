@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8001
 
+    # RAG knowledge base (graph2 FastAPI service)
+    rag_kb_url: str = "http://localhost:8765"
+    rag_kb_read_timeout: float = 180.0
+
     # Logging
     log_file: str = "logs/app.log"
     log_max_bytes: int = 5 * 1024 * 1024
