@@ -47,6 +47,7 @@ export default function ChatPage() {
       await resumeChat(taskId, "approve");
       setStatus("streaming");
     } catch (error) {
+      updateHitlStatus(taskId, "pending"); // 回滚乐观更新
       const message =
         error instanceof Error ? error.message : "恢复执行失败";
       setError(message);
@@ -65,6 +66,7 @@ export default function ChatPage() {
       );
       setStatus("streaming");
     } catch (error) {
+      updateHitlStatus(taskId, "pending"); // 回滚乐观更新
       const message =
         error instanceof Error ? error.message : "恢复执行失败";
       setError(message);
@@ -79,6 +81,7 @@ export default function ChatPage() {
       await resumeChat(taskId, "reject", feedbackMessage);
       setStatus("streaming");
     } catch (error) {
+      updateHitlStatus(taskId, "pending"); // 回滚乐观更新
       const message =
         error instanceof Error ? error.message : "恢复执行失败";
       setError(message);

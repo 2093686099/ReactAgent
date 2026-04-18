@@ -212,16 +212,15 @@ export const useChatStore = create<ChatState>((set) => ({
       }
 
       // 同一 taskId 在 Agent 重新规划后可能产生多次 HITL，只更新最后一个 pending
+      // 例外：当目标状态为 "pending"（回滚场景）时，允许定位到最近一个匹配的 HITL，无论当前状态
       let targetIndex = -1;
       for (let i = lastMessage.segments.length - 1; i >= 0; i--) {
         const segment = lastMessage.segments[i];
-        if (
-          segment.type === "hitl" &&
-          segment.taskId === taskId &&
-          segment.status === "pending"
-        ) {
-          targetIndex = i;
-          break;
+        if (segment.type === "hitl" && segment.taskId === taskId) {
+          if (status === "pending" || segment.status === "pending") {
+            targetIndex = i;
+            break;
+          }
         }
       }
       if (targetIndex === -1) {
