@@ -161,7 +161,11 @@ export const useChatStore = create<ChatState>((set) => ({
       }
 
       const segments = lastMessage.segments.map((segment) => {
-        if (segment.type === "tool" && segment.name === name) {
+        if (
+          segment.type === "tool" &&
+          segment.name === name &&
+          segment.status !== "rejected"
+        ) {
           return { ...segment, status };
         }
         return segment;
@@ -224,9 +228,32 @@ export const useChatStore = create<ChatState>((set) => ({
         return {};
       }
 
+      const targetSegment = lastMessage.segments[targetIndex];
+      const toolName = targetSegment.type === "hitl" ? targetSegment.toolName : null;
+
+      // 反馈/拒绝时，向前回写对应的 tool segment 为 rejected，避免显示绿✓ 误导用户
+      // （middleware reject 后注入的 ToolMessage 在 streaming 层会被解析为 tool: done）
+      let toolBackfillIndex = -1;
+      if ((status === "rejected" || status === "feedback") && toolName) {
+        for (let i = targetIndex - 1; i >= 0; i--) {
+          const segment = lastMessage.segments[i];
+          if (
+            segment.type === "tool" &&
+            segment.name === toolName &&
+            segment.status !== "rejected"
+          ) {
+            toolBackfillIndex = i;
+            break;
+          }
+        }
+      }
+
       const segments = lastMessage.segments.map((segment, index) => {
         if (index === targetIndex && segment.type === "hitl") {
           return { ...segment, status };
+        }
+        if (index === toolBackfillIndex && segment.type === "tool") {
+          return { ...segment, status: "rejected" as const };
         }
         return segment;
       });

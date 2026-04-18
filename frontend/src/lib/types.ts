@@ -3,7 +3,7 @@ export type TextSegment = { type: "text"; content: string };
 export type ToolSegment = {
   type: "tool";
   name: string;
-  status: "calling" | "done";
+  status: "calling" | "done" | "rejected";
 };
 
 export type HitlStatus = "pending" | "approved" | "rejected" | "feedback";

@@ -58,7 +58,11 @@ export default function ChatPage() {
     updateHitlStatus(taskId, "rejected");
     setStatus("sending");
     try {
-      await resumeChat(taskId, "reject");
+      await resumeChat(
+        taskId,
+        "reject",
+        "用户已主动取消此次工具调用，请确认用户意图后再继续，不要重复尝试。"
+      );
       setStatus("streaming");
     } catch (error) {
       const message =
