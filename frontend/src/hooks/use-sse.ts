@@ -45,17 +45,24 @@ export function useSSE(taskId: string | null): void {
     );
 
     eventSource.addEventListener("token", (event) => {
-      const payload = JSON.parse((event as MessageEvent).data) as { text?: string };
+      let payload: { text?: string };
+      try {
+        payload = JSON.parse((event as MessageEvent).data);
+      } catch {
+        return; // 单帧坏数据不应中断流
+      }
       if (payload.text) {
         appendToken(payload.text);
       }
     });
 
     eventSource.addEventListener("tool", (event) => {
-      const payload = JSON.parse((event as MessageEvent).data) as {
-        name?: string;
-        status?: "calling" | "done";
-      };
+      let payload: { name?: string; status?: "calling" | "done" };
+      try {
+        payload = JSON.parse((event as MessageEvent).data);
+      } catch {
+        return;
+      }
       if (!payload.name || !payload.status) {
         return;
       }
@@ -86,7 +93,14 @@ export function useSSE(taskId: string | null): void {
     });
 
     eventSource.addEventListener("hitl", (event) => {
-      const payload = JSON.parse((event as MessageEvent).data);
+      let payload: { action_requests?: Array<{ name?: string; args?: Record<string, unknown> }> };
+      try {
+        payload = JSON.parse((event as MessageEvent).data);
+      } catch {
+        // hitl 事件丢失会让用户卡死无按钮可点，必须显式提示
+        setError("HITL 事件解析失败");
+        return;
+      }
       const actionReq = payload.action_requests?.[0];
       const toolName = actionReq?.name ?? "unknown";
       const description = formatHitlDescription(toolName, actionReq?.args);
