@@ -15,5 +15,6 @@
       "port": 8001,
       "cwd": "backend"
     }
-  ]
+  ],
+  "autoVerify": true
 }
