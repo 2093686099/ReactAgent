@@ -136,11 +136,23 @@ export const useChatStore = create<ChatState>((set) => ({
         return {};
       }
 
+      // resume reject 后 LangGraph 会重放原 tool call，新 tool segment 会被插入到 HITL 之后
+      // 若最近一次同名 HITL 已被 rejected/feedback，新 tool 直接标记 rejected，避免显示绿✓
+      let rejectedByHitl = false;
+      for (let i = lastMessage.segments.length - 1; i >= 0; i--) {
+        const s = lastMessage.segments[i];
+        if (s.type === "hitl" && s.toolName === name) {
+          rejectedByHitl = s.status === "rejected" || s.status === "feedback";
+          break;
+        }
+      }
+      const effectiveStatus: ToolSegment["status"] = rejectedByHitl ? "rejected" : status;
+
       const updatedMessage: Message = {
         ...lastMessage,
         segments: [
           ...lastMessage.segments,
-          { type: "tool", name, status },
+          { type: "tool", name, status: effectiveStatus },
           { type: "text", content: "" },
         ],
       };
@@ -160,13 +172,23 @@ export const useChatStore = create<ChatState>((set) => ({
         return {};
       }
 
+      // 若最近一次同名 HITL 已被 rejected/feedback，则跳过此次更新（保持 rejected 状态）
+      let rejectedByHitl = false;
+      for (let i = lastMessage.segments.length - 1; i >= 0; i--) {
+        const s = lastMessage.segments[i];
+        if (s.type === "hitl" && s.toolName === name) {
+          rejectedByHitl = s.status === "rejected" || s.status === "feedback";
+          break;
+        }
+      }
+
       const segments = lastMessage.segments.map((segment) => {
         if (
           segment.type === "tool" &&
           segment.name === name &&
           segment.status !== "rejected"
         ) {
-          return { ...segment, status };
+          return { ...segment, status: rejectedByHitl ? "rejected" : status };
         }
         return segment;
       });
