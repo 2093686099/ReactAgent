@@ -207,8 +207,25 @@ export const useChatStore = create<ChatState>((set) => ({
         return {};
       }
 
-      const segments = lastMessage.segments.map((segment) => {
-        if (segment.type === "hitl" && segment.taskId === taskId) {
+      // 同一 taskId 在 Agent 重新规划后可能产生多次 HITL，只更新最后一个 pending
+      let targetIndex = -1;
+      for (let i = lastMessage.segments.length - 1; i >= 0; i--) {
+        const segment = lastMessage.segments[i];
+        if (
+          segment.type === "hitl" &&
+          segment.taskId === taskId &&
+          segment.status === "pending"
+        ) {
+          targetIndex = i;
+          break;
+        }
+      }
+      if (targetIndex === -1) {
+        return {};
+      }
+
+      const segments = lastMessage.segments.map((segment, index) => {
+        if (index === targetIndex && segment.type === "hitl") {
           return { ...segment, status };
         }
         return segment;
