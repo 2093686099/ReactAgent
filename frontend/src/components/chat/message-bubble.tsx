@@ -81,10 +81,8 @@ export const MessageBubble = memo(
   MessageBubbleInner,
   (prev, next) => {
     if (next.isStreaming) return false;
-    const hasPendingHitl = next.message.segments.some(
-      (s) => s.type === "hitl" && s.status === "pending"
-    );
-    if (hasPendingHitl) return false;
+    // 引用变化即重渲染（store 是 immutable，segment 状态变化会产生新 message 引用）
+    if (prev.message !== next.message) return false;
     return (
       prev.message.id === next.message.id &&
       prev.message.segments.length === next.message.segments.length
