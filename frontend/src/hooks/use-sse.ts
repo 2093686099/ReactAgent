@@ -4,14 +4,24 @@ import { useEffect } from "react";
 import { API_BASE } from "@/lib/api";
 import { useChatStore } from "@/stores/chat-store";
 
+function safeStringify(v: unknown): string {
+  if (v == null) return "";
+  if (typeof v === "string") return v;
+  try {
+    const s = JSON.stringify(v);
+    if (s === undefined) return String(v);
+    return s.length > 80 ? `${s.slice(0, 77)}...` : s;
+  } catch {
+    return String(v);
+  }
+}
+
 function formatHitlDescription(toolName: string, args?: Record<string, unknown>): string {
   if (!args || Object.keys(args).length === 0) {
     return `Agent 想要调用 ${toolName}`;
   }
   const entries = Object.entries(args).slice(0, 2);
-  const summary = entries
-    .map(([, v]) => (typeof v === "string" ? v : JSON.stringify(v)))
-    .join("、");
+  const summary = entries.map(([, v]) => safeStringify(v)).join("、");
   return `Agent 想要调用 ${toolName}：${summary}`;
 }
 
