@@ -91,11 +91,12 @@ export default function ChatPage() {
 
   const handleSend = async (text: string) => {
     addUserMessage(text);
-    addAssistantMessage();
     setStatus("sending");
 
     try {
       const response = await invokeChat(activeSessionId, text);
+      // 必须在 setCurrentTaskId（触发 useSSE）之前插入 assistant 占位，否则 token 事件会落到 user message 上被丢弃
+      addAssistantMessage();
       setCurrentTaskId(response.task_id);
       setStatus("streaming");
     } catch (error) {
