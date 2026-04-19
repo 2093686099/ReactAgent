@@ -27,6 +27,7 @@
   --color-border-focus: rgba(255, 255, 255, 0.12);
 
   --color-error: #ef4444;
+  --color-success: #10b981;
 }
 
 @layer base {

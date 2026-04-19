@@ -26,7 +26,7 @@ function MessageBubbleInner({
     const content =
       message.segments.find((segment) => segment.type === "text")?.content ?? "";
     return (
-      <div className="ml-auto w-fit max-w-[85%] rounded-[12px_12px_4px_12px] border border-[var(--color-border-standard)] bg-[var(--color-bg-surface)] px-4 py-2 text-[15px] text-[var(--color-text-primary)]">
+      <div className="ml-auto w-fit max-w-[85%] rounded-[12px_12px_4px_12px] border border-[var(--color-border-standard)] bg-[var(--color-bg-surface)] px-4 py-2 text-[15px] tracking-[-0.165px] text-[var(--color-text-primary)]">
         {content}
       </div>
     );

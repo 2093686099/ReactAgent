@@ -29,7 +29,7 @@ export function HitlCard({
   if (segment.status !== "pending") {
     const config = {
       approved: {
-        icon: <Check size={14} aria-hidden="true" className="text-emerald-500" />,
+        icon: <Check size={14} aria-hidden="true" className="text-[var(--color-success)]" />,
         label: `已批准 ${toolLabel}`,
       },
       rejected: {
@@ -41,7 +41,7 @@ export function HitlCard({
           <MessageSquare
             size={14}
             aria-hidden="true"
-            className="text-[var(--color-accent)]"
+            className="text-[var(--color-text-secondary)]"
           />
         ),
         label: `已反馈 ${toolLabel}`,
@@ -62,11 +62,13 @@ export function HitlCard({
     );
   }
 
+  const FEEDBACK_MAX = 500;
+
   return (
     <div
       role="group"
       aria-label={`审批请求：${toolLabel}`}
-      className="my-2 rounded-lg border border-[var(--color-border-standard)] bg-[var(--color-bg-surface)] p-4"
+      className="my-2 rounded-lg border border-[var(--color-border-standard)] bg-white/[0.03] p-4 shadow-[rgba(0,0,0,0.2)_0_0_0_1px]"
     >
       <div className="flex items-center gap-2">
         <Shield size={16} aria-hidden="true" className="text-[var(--color-accent)]" />
@@ -75,20 +77,24 @@ export function HitlCard({
         </span>
       </div>
 
-      <p className="mt-2 text-[15px] text-[var(--color-text-secondary)]">
+      <p className="mt-2 text-[15px] tracking-[-0.165px] text-[var(--color-text-secondary)]">
         {segment.description}
       </p>
 
       {showFeedback ? (
         <div className="mt-3">
           <Textarea
-            className="border-[var(--color-border-standard)] bg-[rgba(255,255,255,0.02)] text-[15px] text-[var(--color-text-secondary)] placeholder:text-[var(--color-text-quaternary)]"
+            className="border-[var(--color-border-standard)] bg-[rgba(255,255,255,0.02)] text-[15px] tracking-[-0.165px] text-[var(--color-text-secondary)] placeholder:text-[var(--color-text-quaternary)]"
             placeholder="告诉 Agent 你的修改意见..."
             rows={3}
+            maxLength={FEEDBACK_MAX}
             value={feedbackText}
             onChange={(e) => setFeedbackText(e.target.value)}
             disabled={isSubmitting}
           />
+          <div className="mt-1 text-right text-[12px] text-[var(--color-text-quaternary)]">
+            {feedbackText.length} / {FEEDBACK_MAX}
+          </div>
           <div className="mt-2 flex items-center gap-2">
             <Button
               size="sm"

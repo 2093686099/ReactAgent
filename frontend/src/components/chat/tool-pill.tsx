@@ -28,7 +28,7 @@ export function ToolPill({ segment }: ToolPillProps) {
         ) : isRejected ? (
           <X size={14} aria-hidden="true" className="text-[var(--color-text-tertiary)]" />
         ) : (
-          <Check size={14} aria-hidden="true" className="text-emerald-500" />
+          <Check size={14} aria-hidden="true" className="text-[var(--color-success)]" />
         )}
         <span
           className={`font-mono text-[13px] text-[var(--color-text-tertiary)] ${
