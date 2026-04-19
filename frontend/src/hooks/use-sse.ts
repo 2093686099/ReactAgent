@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { API_BASE } from "@/lib/api";
+import { getToolLabel } from "@/lib/tool-labels";
 import { useChatStore } from "@/stores/chat-store";
 
 function safeStringify(v: unknown): string {
@@ -17,12 +18,13 @@ function safeStringify(v: unknown): string {
 }
 
 function formatHitlDescription(toolName: string, args?: Record<string, unknown>): string {
+  const label = getToolLabel(toolName);
   if (!args || Object.keys(args).length === 0) {
-    return `Agent 想要调用 ${toolName}`;
+    return `Agent 想要${label}`;
   }
   const entries = Object.entries(args).slice(0, 2);
   const summary = entries.map(([, v]) => safeStringify(v)).join("、");
-  return `Agent 想要调用 ${toolName}：${summary}`;
+  return `Agent 想要${label}：${summary}`;
 }
 
 export function useSSE(taskId: string | null): void {

@@ -27,6 +27,7 @@ export function MessageList({
   const lastMessage = messages[messages.length - 1];
   const streamingMessageId =
     status === "streaming" && lastMessage?.role === "assistant" ? lastMessage.id : null;
+  const isHitlSubmitting = status === "sending";
 
   return (
     <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto">
@@ -42,6 +43,7 @@ export function MessageList({
                 key={message.id}
                 message={message}
                 isStreaming={streamingMessageId === message.id}
+                isHitlSubmitting={isHitlSubmitting}
                 onApprove={onApprove}
                 onReject={onReject}
                 onFeedback={onFeedback}

@@ -8,6 +8,7 @@ import { HitlCard } from "@/components/chat/hitl-card";
 type MessageBubbleProps = {
   message: Message;
   isStreaming?: boolean;
+  isHitlSubmitting?: boolean;
   onApprove?: (taskId: string) => void;
   onReject?: (taskId: string) => void;
   onFeedback?: (taskId: string, message: string) => void;
@@ -16,6 +17,7 @@ type MessageBubbleProps = {
 function MessageBubbleInner({
   message,
   isStreaming = false,
+  isHitlSubmitting = false,
   onApprove,
   onReject,
   onFeedback,
@@ -53,6 +55,7 @@ function MessageBubbleInner({
             <HitlCard
               key={`${message.id}-${index}`}
               segment={segment}
+              isSubmitting={isHitlSubmitting}
               onApprove={() => onApprove?.(segment.taskId)}
               onReject={() => onReject?.(segment.taskId)}
               onFeedback={(msg) => onFeedback?.(segment.taskId, msg)}
@@ -81,6 +84,8 @@ export const MessageBubble = memo(
   MessageBubbleInner,
   (prev, next) => {
     if (next.isStreaming) return false;
+    // isHitlSubmitting 控制按钮禁用状态，必须跟随 re-render
+    if (prev.isHitlSubmitting !== next.isHitlSubmitting) return false;
     // 引用变化即重渲染（store 是 immutable，segment 状态变化会产生新 message 引用）
     if (prev.message !== next.message) return false;
     return (
