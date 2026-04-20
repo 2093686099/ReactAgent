@@ -152,7 +152,66 @@
 
 </deferred>
 
+<decision_patches>
+## Decision Patches (post-research, 2026-04-20)
+
+> Research（10-RESEARCH.md）揭示了 4 处需要在规划前确认的实现约束；用户已拍板。以下补丁覆盖并细化上方 D-01 / D-03 / §Claude's Discretion。
+
+### P-01 修订 D-01：历史 HITL 降级为两态
+**原 D-01：** 历史 HITL 还原为 approved/rejected/feedback 三态。
+**修订：** LangGraph checkpoint **不存储** approval 元数据，三态无法可靠重建。Phase 10 降级为：
+- 历史仅还原 `text` + `tool pill`；tool pill `status` 规则：
+  - 默认 `done`
+  - 若对应 `ToolMessage.content` 匹配 reject 文案前缀（`"用户已主动取消..."` 或包含前端 reject 模板关键语）→ `status: "rejected"`
+- **历史中不渲染 HitlCard**（既不 pending 也不 approved/rejected/feedback）。
+- D-02 "历史 HITL 锁定"随之失去对象，Phase 10 不实现锁定逻辑（历史里不显示卡片即可）。
+- 刷新页面恢复仍在 interrupted 的 task → 由 Phase 12 RESIL-02 从 task meta 还原 pending HitlCard。
+
+### P-02 修订 D-03：reattach 采用后端 truncate_after_active_task
+**原 D-03：** 历史加载后检测 unfinished task，有则 `setCurrentTaskId` 触发 SSE reattach `from_id=0`。
+**修订：** 加入显式去重约定，避免 loadHistory 与 SSE 重放冲突：
+- `GET /api/sessions/{id}/messages` 响应体新增字段 `truncate_after_active_task: bool`。
+- 当 `active_task` 存在且 checkpoint 最末 assistant message 由该 task 产生时，后端置 `true`。
+- 前端 `loadHistory` 在 `truncate_after_active_task=true` 时**丢弃最后一条 assistant message**，随后 `setCurrentTaskId` 触发 SSE 从 `from_id=0` 重放重建该 message。
+- 后端判定规则建议：比较 checkpoint tuple 的 metadata（writes / config）与 task 起止时间；若实现复杂，可退化为"只要 `active_task` 存在且最末是 AIMessage 则为 true"，Plan Check 阶段用真实 interrupted 场景验证。
+
+### P-03 新增 D-21：前端测试框架最小引入 vitest
+**决策：** Phase 10 Wave 0 **引入 vitest（最小）**。
+- `frontend/package.json` devDependencies 加 `vitest`；脚本 `"test": "vitest"`。
+- `frontend/vitest.config.ts` 最小配置（不接 jsdom，不接 testing-library）。
+- 初始用例：`frontend/src/lib/__tests__/time-group.test.ts`（纯函数分组测试）。
+- 更重的 testing-library / Playwright 留给后续 Phase 判断。Phase 10 其余前端逻辑（store actions / useSSE / Sidebar 渲染）依赖手验 + PR review。
+
+### P-04 新增 D-22：首次进入页面自动选中最近会话
+**决策：** `sessions` 非空时，`loadSessions` 完成后 `setActive(sessions[0].id)` 并 `handleSwitch(sessions[0].id)`（触发 loadHistory + 条件 reattach）。
+- 空列表 → 保持 `createLocal` 生成的新 id，聚焦输入框（D-12 空态）。
+- 加载过程用骨架屏或 loader 轻量指示（DESIGN token，discretion）。
+
+### P-05 Session→Task 反向索引（补齐 D-20 未覆盖部分）
+**决策：** 采用研究 §Pattern 2 方案 B —— 在 session JSON 加 `last_task_id` 字段。
+- `SessionService.create_session` 默认 `last_task_id=None`；新增 `set_last_task_id(session_id, task_id, user_id)`。
+- `TaskService.start_invoke` / `start_resume` 成功后调 `set_last_task_id`。
+- `GET /{id}/messages` 用 `session.last_task_id` + `task_bus.get_task_meta` 组装 `active_task`。
+- 不新建独立 `session_tasks:*` key。
+
+### P-06 Title 更新时机（补齐 D-19 边界）
+**决策：**
+- 首次创建 session（TaskService.start_invoke 内 `session_exists=False` 分支）同步写 `title=query[:30]`。
+- 已存在且 `title==""` 的 session 在首次 invoke 时补写 `title`。
+- 后续 invoke 不触发 title 变更（避免聊到一半 title 被覆盖）。
+- 所有 invoke/resume 路径都 `touch(last_updated)`；`GET /{id}/messages` 纯读不 touch。
+
+### P-07 删除链路（补齐 D-11 / D-20）
+**决策：**
+- `DELETE /api/sessions/{id}` 保持现状，只删 Redis（不删 Postgres checkpoint，允许撤销全量恢复历史）。
+- 撤销接口：`POST /api/sessions` body `{session_id?, title?}`；若 `session_id` 已存在，**幂等返回现有 session**（不覆盖 `created_at`）。
+- 撤销时前端保留本地 `deletedPending: Session | null`（非队列），点撤销调 `POST`，超时（8s）自动清 `deletedPending`，不再做额外后端动作。
+- Checkpoint 长期 GC 为未来工作（§Deferred 增加条目）。
+
+</decision_patches>
+
 ---
 
 *Phase: 10-session-management*
 *Context gathered: 2026-04-20*
+*Decision patches applied: 2026-04-20 (post-research)*
