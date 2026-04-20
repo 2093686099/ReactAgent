@@ -78,7 +78,12 @@ Plans:
   2. 用户可以点击切换到不同会话，历史消息正确加载显示
   3. 切换会话时旧的 SSE 连接正确关闭，不出现连接泄漏
   4. 用户可以删除不需要的会话
-**Plans**: TBD
+**Plans:** 4 plans
+Plans:
+- [ ] 10-01-PLAN.md — 后端基础层：history + session/task 扩展 + sessions API + pytest 全绿（Wave 0，autonomous）
+- [ ] 10-02-PLAN.md — 前端 vitest 最小引入 + time-group 纯函数 + 单元测试（Wave 0，autonomous，与 10-01 并行）
+- [ ] 10-03-PLAN.md — 前端数据层：types/api/session-store/chat-store.loadHistory/useSSE 双参数（Wave 1，autonomous，depends_on 10-01）
+- [ ] 10-04-PLAN.md — Sidebar 组件 + page.tsx 组合 + Success Criteria 1-4 手验（Wave 2，autonomous=false，depends_on 10-02 + 10-03）
 **UI hint**: yes
 
 ### Phase 11: Todo Panel
@@ -125,7 +130,7 @@ Note: Phase 13 depends only on Phase 09 (Tool Call UX), can run parallel with 10
 | 1-7 | v1.0 | - | Complete | 2026-04-12 |
 | 8. SSE Chat Foundation | v2.0 | 0/3 | Planning done | - |
 | 9. Tool Call UX + HITL | v2.0 | 0/3 | Planning done | - |
-| 10. Session Management | v2.0 | 0/? | Not started | - |
+| 10. Session Management | v2.0 | 0/4 | Planning done | - |
 | 11. Todo Panel | v2.0 | 0/? | Not started | - |
 | 12. Resilience | v2.0 | 0/? | Not started | - |
 | 13. RAG Source Panel + Observability | v2.0 | 0/? | Not started | - |
