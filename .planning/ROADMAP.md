@@ -5,7 +5,7 @@ Progressive teaching project: build a production-grade ReAct Agent step by step.
 ## Milestones
 
 - ✅ **v1.0 Core Agent Capabilities** - Phases 01-07 (shipped 2026-04-12)
-- 🚧 **v2.0 Next.js 前端** - Phases 08-12 (in progress)
+- 🚧 **v2.0 Next.js 前端** - Phases 08-13 (in progress)
 
 ## Phases
 
@@ -33,6 +33,7 @@ Progressive teaching project: build a production-grade ReAct Agent step by step.
 - [ ] **Phase 10: Session Management** - 会话侧边栏 + 历史消息加载
 - [ ] **Phase 11: Todo Panel** - Agent 任务规划面板
 - [ ] **Phase 12: Resilience** - SSE 断线重连 + HITL 状态持久化
+- [ ] **Phase 13: RAG Source Panel + Observability** - 工具 artifact 透传到前端引用卡片 + 调用链可观测
 
 ## Phase Details
 
@@ -99,11 +100,25 @@ Plans:
   2. 页面刷新后，如果 Agent 仍在等待审批，HITL 审批卡片能恢复显示
 **Plans**: TBD
 
+### Phase 13: RAG Source Panel + Observability
+**Goal**: 用户在 Agent 调用 RAG 知识库时能看到清晰的引用来源，系统侧能观测到 RAG 工具调用的路由分布与错误分布
+**Depends on**: Phase 09 (Tool Call UX / SSE artifact infra)
+**Requirements**: TBD（在 /gsd-discuss-phase 13 里定义，候选：RAG-01 artifact→SSE 透传、RAG-02 SourceCards 组件、RAG-03 KB_ERROR/KB_EMPTY 视觉提示、RAG-04 结构化日志）
+**Success Criteria** (what must be TRUE):
+  1. AI 回复中使用 query_knowledge_base 工具时，UI 在回答下方展示最多 3 条来源卡片（源文件名 + 类别 + 180 字 snippet）
+  2. ToolMessage.artifact 经由 SSE 事件透传到前端，前端不再二次请求 RAG 服务即可渲染来源
+  3. 工具返回 KB_ERROR / KB_EMPTY 时，前端有明确区别于正常回答的视觉提示（而不是让用户误以为这就是答案）
+  4. 后端结构化记录每次 query_knowledge_base 调用的 route 路径、error_type、document_count，可通过日志查询统计 web_search fallback 比例
+**Plans**: TBD
+**UI hint**: yes
+**Design decisions**: see `.planning/notes/tool-artifact-consumption-decisions.md`（B-lite vs B-full vs C 的取舍）
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 08 → 09 → 10 → 11 → 12
+Phases execute in numeric order: 08 → 09 → 10 → 11 → 12 → 13
 Note: Phase 11 (Todo) depends only on Phase 08, can potentially parallel with 09/10.
+Note: Phase 13 depends only on Phase 09 (Tool Call UX), can run parallel with 10/11/12 if prioritized.
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -113,3 +128,4 @@ Note: Phase 11 (Todo) depends only on Phase 08, can potentially parallel with 09
 | 10. Session Management | v2.0 | 0/? | Not started | - |
 | 11. Todo Panel | v2.0 | 0/? | Not started | - |
 | 12. Resilience | v2.0 | 0/? | Not started | - |
+| 13. RAG Source Panel + Observability | v2.0 | 0/? | Not started | - |
