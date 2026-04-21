@@ -74,6 +74,8 @@ export default function ChatPage() {
         );
       }
     } catch (err) {
+      // 404 = session 后端不存在（本地占位未发消息 / Redis TTL 过期）→ 当作空历史，UI 已清空
+      if (err instanceof Error && err.message === "HTTP 404") return;
       const m = err instanceof Error ? err.message : "加载历史失败";
       toast.error(m);
     }

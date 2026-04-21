@@ -59,10 +59,10 @@ async def business_error_handler(request, exc: BusinessError):
     )
 
 
-# CORS — Next.js 前端跑在 3000 端口
+# CORS — Next.js dev server 端口可能被占用自动切到 3001/3002/...
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origin_regex=r"http://localhost:\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
