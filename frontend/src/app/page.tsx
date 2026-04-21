@@ -34,6 +34,7 @@ export default function ChatPage() {
   const deleteOptimistic = useSessionStore((s) => s.deleteOptimistic);
   const restoreSession = useSessionStore((s) => s.restoreSession);
   const loadSessions = useSessionStore((s) => s.loadSessions);
+  const upsertSession = useSessionStore((s) => s.upsertSession);
 
   useSSE(currentTaskId, activeSessionId);
 
@@ -79,6 +80,12 @@ export default function ChatPage() {
         setStatus(
           hist.active_task.status === "interrupted" ? "interrupted" : "streaming",
         );
+        // G-02：把后端权威 last_task_id 同步回 sessions[]，让删除/撤销等路径
+        // 能拿到最新值（不再依赖 chat-store.currentTaskId 兜底）
+        const existing = useSessionStore.getState().sessions.find((s) => s.id === id);
+        if (existing && existing.last_task_id !== hist.active_task.task_id) {
+          upsertSession({ ...existing, last_task_id: hist.active_task.task_id });
+        }
       }
     } catch (err) {
       // 404 = session 后端不存在（本地占位未发消息 / Redis TTL 过期）→ 当作空历史，UI 已清空
@@ -92,14 +99,6 @@ export default function ChatPage() {
     // sessions 闭包是删除前快照（state 变更在下一次 render 才反映）
     const target = sessions.find((s) => s.id === id);
     if (!target) return;
-    // session-store.sessions 从不同步后端 last_task_id（upsertSession 未接管 invoke / reattach），
-    // 直接用这份 target 撤销会丢掉在途 task_id → 撤销后无法 reattach。
-    // 删的是当前活跃会话时，chat-store.currentTaskId 就是这条会话最新的 task_id，合并进 target。
-    const liveTaskId = useChatStore.getState().currentTaskId;
-    const targetForRestore: typeof target =
-      id === activeSessionId && liveTaskId
-        ? { ...target, last_task_id: liveTaskId }
-        : target;
     try {
       await deleteOptimistic(id);
     } catch {
@@ -111,7 +110,7 @@ export default function ChatPage() {
       action: {
         label: "撤销",
         onClick: async () => {
-          await restoreSession(targetForRestore);
+          await restoreSession(target);
         },
       },
     });
@@ -210,6 +209,11 @@ export default function ChatPage() {
       addAssistantMessage();
       setCurrentTaskId(response.task_id);
       setStatus("streaming");
+      // G-02：同步新 task_id 到 sessions[]，让后续删除/撤销能带正确的 last_task_id
+      const existing = useSessionStore.getState().sessions.find((s) => s.id === activeSessionId);
+      if (existing) {
+        upsertSession({ ...existing, last_task_id: response.task_id });
+      }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "服务暂时不可用，请稍后重试";

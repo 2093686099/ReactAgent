@@ -134,19 +134,18 @@ defer_to: Phase 11 或 hotfix
 severity: warning
 phase: 10-session-management
 discovered_in: Test 7
+status: resolved
+resolved_in: 本次 UAT 同 session 内 hotfix
 root_cause: |
   frontend/src/stores/session-store.ts 定义了 upsertSession 但无人调用。
   sessions 数组里每条记录的 last_task_id 只在 loadSessions 首次写入后就一直陈旧：
   - handleSend 成功的 invokeChat.response.task_id 没写回 sessions；
   - handleSwitch 的 hist.active_task.task_id 也没写回。
   导致任何依赖 "sessions 数组里 target.last_task_id" 的下游都是 stale。
-current_mitigation: |
-  Test 7 的主路径（删活跃会话后撤销）已通过 handleDelete 合并
-  chat-store.currentTaskId 绕过（commit 1b4551f）。但非活跃会话的
-  同类删除（先切走再回来不切入 → 直接从 sidebar 列表删除）无法
-  覆盖，这是本 Gap 的剩余风险。
-suggested_fix: |
-  系统性修：在 handleSend 的 invokeChat 成功分支、handleSwitch 的
-  reattach 分支，显式调 useSessionStore.getState().upsertSession
-  用最新 last_task_id 更新对应 session 记录。一次性消除 stale 风险。
-defer_to: Phase 11 或 hotfix
+resolution: |
+  在 handleSend invoke 成功分支、handleSwitch reattach 分支显式调
+  upsertSession 写回最新 last_task_id。同时回退了 Test 7 阶段的
+  兜底（commit 1b4551f 的 handleDelete 里 chat-store.currentTaskId
+  合并 liveTaskId 逻辑），让 sessions[] 成为前端 last_task_id 的
+  单一真相源。非活跃会话删除 → 撤销的路径也顺带修好。
+  TypeScript + vitest 通过（7/7）。
