@@ -48,7 +48,11 @@ export async function listSessions(): Promise<Session[]> {
 }
 
 export async function createSessionAPI(
-  input: { session_id?: string; title?: string } = {},
+  input: {
+    session_id?: string;
+    title?: string;
+    last_task_id?: string | null;
+  } = {},
 ): Promise<Session> {
   const r = await fetch(`${API_BASE}/api/sessions`, {
     method: "POST",

@@ -38,12 +38,15 @@ class SessionService:
         user_id: str | None = None,
         session_id: str | None = None,
         title: str = "",
+        last_task_id: str | None = None,
     ) -> str:
         """创建新会话，返回 session_id。
 
         新字段（Phase 10）：
         - title: str, 默认 ""（首次 invoke 时由 TaskService 写 query[:30]）
-        - last_task_id: str | None, 默认 None（用于 active_task 反向索引，P-05）
+        - last_task_id: str | None, 默认 None（用于 active_task 反向索引，P-05）。
+          SESS-04 撤销路径上由前端回传，用于恢复已删除但仍有 running/interrupted
+          task 的会话（WR-02）。
         """
         user_id = user_id or settings.default_user_id
         session_id = session_id or str(uuid.uuid4())
@@ -52,7 +55,7 @@ class SessionService:
             "user_id": user_id,
             "status": "idle",
             "title": title,
-            "last_task_id": None,
+            "last_task_id": last_task_id,
             "created_at": time.time(),
             "last_updated": time.time(),
         }

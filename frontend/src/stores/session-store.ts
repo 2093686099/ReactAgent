@@ -71,10 +71,12 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
   restoreSession: async (session) => {
     // 幂等 POST：后端存在返回原记录，不存在则恢复占位
+    // WR-02：回传 last_task_id，确保撤销后仍能 reattach 在途 HITL / running task
     try {
       await createSessionAPI({
         session_id: session.id,
         title: session.title,
+        last_task_id: session.last_task_id ?? undefined,
       });
     } catch {
       // 8s 撤销窗口过短 & 撤销失败不重试；UI 可自行提示

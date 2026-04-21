@@ -54,14 +54,20 @@ async def create_session(
         return {
             "session_id": request.session_id,
             "title": (existing or {}).get("title", ""),
+            "last_task_id": (existing or {}).get("last_task_id"),
         }
 
     session_id = await session_svc.create_session(
         user_id=user_id,
         session_id=request.session_id,
         title=request.title or "",
+        last_task_id=request.last_task_id,
     )
-    return {"session_id": session_id, "title": request.title or ""}
+    return {
+        "session_id": session_id,
+        "title": request.title or "",
+        "last_task_id": request.last_task_id,
+    }
 
 
 @router.delete("/{session_id}")

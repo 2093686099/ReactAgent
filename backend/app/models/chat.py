@@ -13,14 +13,17 @@ class ChatRequest(BaseModel):
 
 
 class SessionCreateRequest(BaseModel):
-    """POST /api/sessions 请求体。两个字段都可选，body 可为空。
+    """POST /api/sessions 请求体。所有字段都可选，body 可为空。
 
     - session_id 非空且已存在 → 幂等返回现有 session（不覆盖 created_at，P-07）
     - session_id 缺省 → 服务端 uuid
     - title 缺省 → 空串（首次 invoke 时由 TaskService 回填）
+    - last_task_id 缺省 → None；SESS-04 撤销路径上由前端回传，
+      用于恢复已删除但仍有 running/interrupted task 的会话（WR-02）
     """
     session_id: Optional[str] = None
     title: Optional[str] = None
+    last_task_id: Optional[str] = None
 
 
 class ResumeRequest(BaseModel):
