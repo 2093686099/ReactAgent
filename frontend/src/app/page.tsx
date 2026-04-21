@@ -68,6 +68,13 @@ export default function ChatPage() {
       loadHistoryAction(msgs);
       // ⑤ reattach
       if (hist.active_task?.task_id) {
+        // 在途 task 的 assistant 输出还没持久化到 history，chat-store 的
+        // addHitlSegment / appendToken / addToolSegment 都要求 last message
+        // 是 assistant，否则 early return → HitlCard 永不显示。补占位。
+        const last = msgs[msgs.length - 1];
+        if (!last || last.role !== "assistant") {
+          addAssistantMessage();
+        }
         setCurrentTaskId(hist.active_task.task_id);
         setStatus(
           hist.active_task.status === "interrupted" ? "interrupted" : "streaming",
