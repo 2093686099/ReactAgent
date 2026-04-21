@@ -93,7 +93,13 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Agent 执行时，todo 列表实时出现在面板中，展示当前任务规划
   2. todo 项状态变化（pending -> done）时界面自动更新
-**Plans**: TBD
+**Plans:** 5 plans
+Plans:
+- [ ] 11-01-PLAN.md — Wave 0 后端 fixture 扩展（make_checkpoint_tuple 加 todos 参数）
+- [ ] 11-02-PLAN.md — Wave 1 后端契约：history.py 透出 todos + TodoModel + 2 新测试 + 3 既有断言补齐 + CONTEXT.md D-08 token 更正
+- [ ] 11-03-PLAN.md — Wave 2 前端数据层：types + chat-store.todos + ui-store(persist) + use-sse todo listener + page.tsx 4 处 loadHistoryAction 迁移 + 4 个 store 单测
+- [ ] 11-04-PLAN.md — Wave 3 前端 UI 贴皮：4 个 todo 组件 + AppLayout 条件式 grid + rehydrate + chat-area header toggle 按钮 + globals.css @keyframes todoEnter
+- [ ] 11-05-PLAN.md — Wave 3 人工 UAT：auto-open / 切会话 / 删会话 / reattach / DESIGN token 视觉走查（checkpoint，autonomous=false）
 **UI hint**: yes
 
 ### Phase 12: Resilience
