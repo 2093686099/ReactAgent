@@ -92,6 +92,14 @@ export default function ChatPage() {
     // sessions 闭包是删除前快照（state 变更在下一次 render 才反映）
     const target = sessions.find((s) => s.id === id);
     if (!target) return;
+    // session-store.sessions 从不同步后端 last_task_id（upsertSession 未接管 invoke / reattach），
+    // 直接用这份 target 撤销会丢掉在途 task_id → 撤销后无法 reattach。
+    // 删的是当前活跃会话时，chat-store.currentTaskId 就是这条会话最新的 task_id，合并进 target。
+    const liveTaskId = useChatStore.getState().currentTaskId;
+    const targetForRestore: typeof target =
+      id === activeSessionId && liveTaskId
+        ? { ...target, last_task_id: liveTaskId }
+        : target;
     try {
       await deleteOptimistic(id);
     } catch {
@@ -103,7 +111,7 @@ export default function ChatPage() {
       action: {
         label: "撤销",
         onClick: async () => {
-          await restoreSession(target);
+          await restoreSession(targetForRestore);
         },
       },
     });
