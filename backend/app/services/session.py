@@ -5,11 +5,16 @@ import json
 import logging
 import time
 import uuid
+from typing import Callable
+from redis.exceptions import WatchError
 from app.infra.redis import redis_manager
 from app.config import settings
 
 
 logger = logging.getLogger(__name__)
+
+# WR-03：非原子 read-modify-write 的重试次数。WATCH 冲突后最多重试这么多次。
+_ATOMIC_UPDATE_RETRIES = 3
 
 
 class SessionService:
@@ -74,19 +79,53 @@ class SessionService:
         raw = await self.client.get(self._key(user_id, session_id))
         return json.loads(raw) if raw else None
 
+    async def _atomic_update(
+        self,
+        session_id: str,
+        user_id: str,
+        mutator: Callable[[dict], None],
+    ) -> bool:
+        """WR-03：WATCH/MULTI/EXEC 乐观锁原子更新 session JSON blob。
+
+        将 get+mutate+set 包进 Redis 事务；如有并发写入导致 WATCH 冲突，则重试至多
+        `_ATOMIC_UPDATE_RETRIES` 次。mutator 以就地方式修改 dict。
+        """
+        key = self._key(user_id, session_id)
+        for _ in range(_ATOMIC_UPDATE_RETRIES):
+            async with self.client.pipeline(transaction=True) as pipe:
+                try:
+                    await pipe.watch(key)
+                    raw = await pipe.get(key)
+                    if raw is None:
+                        await pipe.unwatch()
+                        return False
+                    current = json.loads(raw)
+                    mutator(current)
+                    pipe.multi()
+                    pipe.set(
+                        key,
+                        json.dumps(current, ensure_ascii=False),
+                        ex=settings.session_ttl,
+                    )
+                    await pipe.execute()
+                    return True
+                except WatchError:
+                    # 另一协程并发写入 → 重试
+                    continue
+        logger.warning(
+            f"session {user_id}:{session_id} 原子更新重试 "
+            f"{_ATOMIC_UPDATE_RETRIES} 次仍冲突，放弃写入"
+        )
+        return False
+
     async def touch(self, session_id: str, user_id: str | None = None) -> bool:
         """更新 last_updated 时间戳并续期 TTL"""
         user_id = user_id or settings.default_user_id
-        current = await self.get_session(session_id, user_id)
-        if current is None:
-            return False
-        current["last_updated"] = time.time()
-        await self.client.set(
-            self._key(user_id, session_id),
-            json.dumps(current, ensure_ascii=False),
-            ex=settings.session_ttl,
-        )
-        return True
+
+        def _m(current: dict) -> None:
+            current["last_updated"] = time.time()
+
+        return await self._atomic_update(session_id, user_id, _m)
 
     async def update_title(
         self,
@@ -96,16 +135,11 @@ class SessionService:
     ) -> bool:
         """覆盖 title。不动 last_updated（title 写入不算用户活动）。"""
         user_id = user_id or settings.default_user_id
-        current = await self.get_session(session_id, user_id)
-        if current is None:
-            return False
-        current["title"] = title
-        await self.client.set(
-            self._key(user_id, session_id),
-            json.dumps(current, ensure_ascii=False),
-            ex=settings.session_ttl,
-        )
-        return True
+
+        def _m(current: dict) -> None:
+            current["title"] = title
+
+        return await self._atomic_update(session_id, user_id, _m)
 
     async def set_last_task_id(
         self,
@@ -115,16 +149,11 @@ class SessionService:
     ) -> bool:
         """写入 last_task_id（Session→Task 反向索引，P-05）。不动 last_updated。"""
         user_id = user_id or settings.default_user_id
-        current = await self.get_session(session_id, user_id)
-        if current is None:
-            return False
-        current["last_task_id"] = task_id
-        await self.client.set(
-            self._key(user_id, session_id),
-            json.dumps(current, ensure_ascii=False),
-            ex=settings.session_ttl,
-        )
-        return True
+
+        def _m(current: dict) -> None:
+            current["last_task_id"] = task_id
+
+        return await self._atomic_update(session_id, user_id, _m)
 
     async def session_exists(self, session_id: str, user_id: str | None = None) -> bool:
         user_id = user_id or settings.default_user_id
