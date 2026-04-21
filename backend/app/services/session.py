@@ -37,14 +37,22 @@ class SessionService:
         self,
         user_id: str | None = None,
         session_id: str | None = None,
+        title: str = "",
     ) -> str:
-        """创建新会话，返回 session_id"""
+        """创建新会话，返回 session_id。
+
+        新字段（Phase 10）：
+        - title: str, 默认 ""（首次 invoke 时由 TaskService 写 query[:30]）
+        - last_task_id: str | None, 默认 None（用于 active_task 反向索引，P-05）
+        """
         user_id = user_id or settings.default_user_id
         session_id = session_id or str(uuid.uuid4())
         data = {
             "session_id": session_id,
             "user_id": user_id,
             "status": "idle",
+            "title": title,
+            "last_task_id": None,
             "created_at": time.time(),
             "last_updated": time.time(),
         }
@@ -70,6 +78,44 @@ class SessionService:
         if current is None:
             return False
         current["last_updated"] = time.time()
+        await self.client.set(
+            self._key(user_id, session_id),
+            json.dumps(current, ensure_ascii=False),
+            ex=settings.session_ttl,
+        )
+        return True
+
+    async def update_title(
+        self,
+        session_id: str,
+        title: str,
+        user_id: str | None = None,
+    ) -> bool:
+        """覆盖 title。不动 last_updated（title 写入不算用户活动）。"""
+        user_id = user_id or settings.default_user_id
+        current = await self.get_session(session_id, user_id)
+        if current is None:
+            return False
+        current["title"] = title
+        await self.client.set(
+            self._key(user_id, session_id),
+            json.dumps(current, ensure_ascii=False),
+            ex=settings.session_ttl,
+        )
+        return True
+
+    async def set_last_task_id(
+        self,
+        session_id: str,
+        task_id: str | None,
+        user_id: str | None = None,
+    ) -> bool:
+        """写入 last_task_id（Session→Task 反向索引，P-05）。不动 last_updated。"""
+        user_id = user_id or settings.default_user_id
+        current = await self.get_session(session_id, user_id)
+        if current is None:
+            return False
+        current["last_task_id"] = task_id
         await self.client.set(
             self._key(user_id, session_id),
             json.dumps(current, ensure_ascii=False),

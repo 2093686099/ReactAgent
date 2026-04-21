@@ -21,18 +21,20 @@ _session_service: SessionService | None = None
 _memory_service: MemoryService | None = None
 
 
-def get_task_service() -> TaskService:
-    global _task_service
-    if _task_service is None:
-        _task_service = TaskService()
-    return _task_service
-
-
 def get_session_service() -> SessionService:
     global _session_service
     if _session_service is None:
         _session_service = SessionService()
     return _session_service
+
+
+def get_task_service() -> TaskService:
+    global _task_service
+    if _task_service is None:
+        # 注入同一个 SessionService singleton，保证 TaskService 写 title / last_task_id
+        # 与 API 层 session_svc 命中同一份 Redis 逻辑路径（方便测试 monkeypatch）。
+        _task_service = TaskService(session_service=get_session_service())
+    return _task_service
 
 
 def get_memory_service() -> MemoryService:

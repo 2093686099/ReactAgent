@@ -10,6 +10,7 @@ from app.infra import task_bus
 from app.core.agent import AgentService
 from app.core.streaming import parse_agent_events, EVT_HITL, EVT_DONE, EVT_ERROR
 from app.core.exceptions import TaskNotFoundError, TaskStateError
+from app.services.session import SessionService
 from app.config import settings
 
 
@@ -17,12 +18,21 @@ logger = logging.getLogger(__name__)
 
 AgentInput = dict[str, Any] | Command
 
+# 首次 invoke 自动 title 截断长度（P-06）。全角/半角按字符计，未做 tokenize。
+TITLE_LIMIT = 30
+
 
 class TaskService:
     """任务生命周期管理 — 后台执行 agent 并把事件写入 Redis Stream"""
 
-    def __init__(self, agent_service: AgentService | None = None):
+    def __init__(
+        self,
+        agent_service: AgentService | None = None,
+        session_service: SessionService | None = None,
+    ):
         self._agent_service = agent_service or AgentService()
+        # 惰性创建 SessionService 以保持向后兼容；测试通过 DI 注入 mock。
+        self._session_service = session_service or SessionService()
         self._running: dict[str, asyncio.Task] = {}
 
     async def start_invoke(
@@ -32,9 +42,30 @@ class TaskService:
         query: str,
         system_prompt: str | None = None,
     ) -> str:
-        """启动一个新的 invoke 任务，返回 task_id"""
+        """启动一个新的 invoke 任务，返回 task_id。
+
+        P-06 语义：
+        - session 不存在 → create_session(title=query[:30])
+        - session 存在且 title 为空 → update_title(query[:30])
+        - title 已有值 → 不动
+        - 所有分支都 set_last_task_id（P-05 Session→Task 反向索引）
+        """
         task_id = str(uuid.uuid4())
+        title_30 = (query or "")[:TITLE_LIMIT]
+        session_svc = self._session_service
+
+        if not await session_svc.session_exists(session_id, user_id):
+            await session_svc.create_session(
+                user_id=user_id, session_id=session_id, title=title_30,
+            )
+        else:
+            current = await session_svc.get_session(session_id, user_id)
+            if current is not None and not current.get("title"):
+                await session_svc.update_title(session_id, title_30, user_id)
+
         await task_bus.create_task_meta(task_id, user_id, session_id)
+        await session_svc.set_last_task_id(session_id, task_id, user_id)
+
         agent_input = {"messages": [{"role": "user", "content": query}]}
         bg = asyncio.create_task(
             self._run_agent(task_id, agent_input, session_id, system_prompt),
@@ -63,6 +94,10 @@ class TaskService:
         )
         self._running[task_id] = bg
         bg.add_done_callback(lambda t: self._running.pop(task_id, None))
+        # P-05: resume 也刷新反向索引（task_id 未变，但保证 session.last_task_id 一致）
+        await self._session_service.set_last_task_id(
+            meta["session_id"], task_id, meta["user_id"],
+        )
 
     async def _run_agent(
         self,

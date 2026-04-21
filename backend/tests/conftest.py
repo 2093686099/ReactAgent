@@ -55,6 +55,18 @@ def mock_session_service():
     svc.list_sessions = AsyncMock(return_value=[])
     svc.get_active_session_id = AsyncMock(return_value=None)
     svc.delete_session = AsyncMock(return_value=True)
+    # Phase 10 新增方法
+    svc.update_title = AsyncMock(return_value=True)
+    svc.set_last_task_id = AsyncMock(return_value=True)
+    svc.get_session = AsyncMock(return_value={
+        "session_id": "s1",
+        "user_id": "default",
+        "status": "idle",
+        "title": "",
+        "last_task_id": None,
+        "created_at": 0,
+        "last_updated": 0,
+    })
     return svc
 
 

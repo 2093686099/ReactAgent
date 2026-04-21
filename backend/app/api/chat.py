@@ -37,11 +37,12 @@ async def invoke(
     """
     发送消息，创建后台 agent 任务。立即返回 task_id，客户端通过
     GET /api/chat/stream/{task_id} 订阅 SSE 事件流。
+
+    注意：session 的隐式创建 / title 写入 / last_task_id 维护由 TaskService 统一
+    负责（P-05 / P-06）。API 层只做用户活动 touch。
     """
-    # 确保会话存在
-    if not await session_svc.session_exists(request.session_id, user_id):
-        await session_svc.create_session(user_id=user_id, session_id=request.session_id)
-    else:
+    # session 存在时 touch（"用户活动"语义）；不存在会由 TaskService 负责 create
+    if await session_svc.session_exists(request.session_id, user_id):
         await session_svc.touch(request.session_id, user_id)
 
     task_id = await task_svc.start_invoke(
@@ -61,6 +62,7 @@ async def invoke(
 async def resume(
     request: ResumeRequest,
     task_svc: TaskService = Depends(get_task_service),
+    session_svc: SessionService = Depends(get_session_service),
 ):
     """
     提交 HITL 决策，恢复已中断的 task。保持同一 task_id，事件流续接。
@@ -81,6 +83,8 @@ async def resume(
         request.response_type, request.args, request.action_requests or []
     )
     await task_svc.start_resume(request.task_id, command_data)
+    # P-06: resume 路径也刷 last_updated
+    await session_svc.touch(meta["session_id"], meta["user_id"])
 
     return TaskCreatedResponse(
         task_id=request.task_id,

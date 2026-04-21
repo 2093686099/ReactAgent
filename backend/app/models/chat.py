@@ -12,6 +12,17 @@ class ChatRequest(BaseModel):
     system_message: Optional[str] = None
 
 
+class SessionCreateRequest(BaseModel):
+    """POST /api/sessions 请求体。两个字段都可选，body 可为空。
+
+    - session_id 非空且已存在 → 幂等返回现有 session（不覆盖 created_at，P-07）
+    - session_id 缺省 → 服务端 uuid
+    - title 缺省 → 空串（首次 invoke 时由 TaskService 回填）
+    """
+    session_id: Optional[str] = None
+    title: Optional[str] = None
+
+
 class ResumeRequest(BaseModel):
     """HITL 恢复请求 — 针对已有 task_id"""
     task_id: str
