@@ -16,7 +16,8 @@ Requirements for Next.js 前端。Each maps to roadmap phases.
 - [ ] **CHAT-05**: 新消息到达时自动滚动到底部
 - [ ] **CHAT-06**: 发送中/等待响应时显示加载状态
 - [ ] **CHAT-07**: 请求失败时显示错误信息
-- [ ] **CHAT-08**: 打开/切换会话时加载历史消息（需后端新增 endpoint，从 checkpoint 重建消息列表）
+- [x] **CHAT-08
+**: 打开/切换会话时加载历史消息（需后端新增 endpoint，从 checkpoint 重建消息列表）
 
 ### Tool & HITL
 
@@ -29,10 +30,13 @@ Requirements for Next.js 前端。Each maps to roadmap phases.
 
 ### Session
 
-- [ ] **SESS-01**: 侧边栏展示用户的所有会话列表
-- [ ] **SESS-02**: 用户可以新建会话
+- [x] **SESS-01
+**: 侧边栏展示用户的所有会话列表
+- [x] **SESS-02
+**: 用户可以新建会话
 - [ ] **SESS-03**: 用户可以切换会话（正确管理 SSE 连接生命周期）
-- [ ] **SESS-04**: 用户可以删除会话
+- [x] **SESS-04
+**: 用户可以删除会话
 
 ### Todo Panel
 

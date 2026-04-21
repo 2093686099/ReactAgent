@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Next.js 前端
 status: executing
-stopped_at: Phase 10 context gathered
-last_updated: "2026-04-20T04:57:57.573Z"
-last_activity: 2026-04-16
+stopped_at: Phase 10 Plan 01 后端契约完成
+last_updated: "2026-04-21T03:45:47.188Z"
+last_activity: 2026-04-21 -- Phase 10 execution started
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
-  percent: 100
+  total_plans: 10
+  completed_plans: 7
+  percent: 70
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** 用户通过自然语言与 AI Agent 对话，Agent 自主调用工具完成任务，关键操作经人工审批后执行
-**Current focus:** Phase 09 — tool-call-ux-hitl-approval
+**Current focus:** Phase 10 — --name
 
 ## Current Position
 
-Phase: 09 (tool-call-ux-hitl-approval) — EXECUTING
-Plan: 3 of 3
-Status: Ready to execute
-Last activity: 2026-04-16
+Phase: 10 (session-management) — EXECUTING
+Plan: 2 of 4
+Status: Executing Phase 10
+Last activity: 2026-04-21 -- Phase 10 Plan 01 后端契约完成
 
-Progress: [██░░░░░░░░] 20%
+Progress: [███████░░░] 70%
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [██░░░░░░░░] 20%
 *Updated after each plan completion*
 | Phase 09 P02 | 2m53s | 2 tasks | 3 files |
 | Phase 09 P03 | 2m2s | 2 tasks | 2 files |
+| Phase 10 P01 | 6m1s | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,10 @@ Recent decisions affecting current work:
 - [Phase 09]: HitlCard 回调 props 为可选，Plan 03 连线时传入实际 handler
 - [Phase 09]: pending HITL 时隐藏 Sparkles 完成图标，表示消息未完结
 - [Phase 09]: feedback 走 reject + message 路径，SSE 连接复用无需重建 EventSource
+- [Phase 10-01]: session JSON 加 last_task_id 字段作为反向索引（方案 B），避免新建独立 session_tasks:* key
+- [Phase 10-01]: 历史 HITL 降级为两态（text + tool pill），ToolMessage reject 前缀映射 rejected（P-01）
+- [Phase 10-01]: 跨用户访问 GET /api/sessions/{id}/messages 返回 404 且 detail 脱敏（T-10-01）
+- [Phase 10-01]: TaskService 接管 session 隐式创建 + title 回填，API 层仅做用户活动 touch
 
 ### Pending Todos
 
@@ -80,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-20T04:57:57.562Z
-Stopped at: Phase 10 context gathered
-Resume file: .planning/phases/10-session-management/10-CONTEXT.md
+Last session: 2026-04-21T03:45:47.184Z
+Stopped at: Phase 10 Plan 01 后端契约完成
+Resume file: None

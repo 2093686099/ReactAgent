@@ -80,7 +80,7 @@ Plans:
   4. 用户可以删除不需要的会话
 **Plans:** 4 plans
 Plans:
-- [ ] 10-01-PLAN.md — 后端基础层：history + session/task 扩展 + sessions API + pytest 全绿（Wave 0，autonomous）
+- [x] 10-01-PLAN.md — 后端基础层：history + session/task 扩展 + sessions API + pytest 全绿（Wave 0，autonomous） (completed 2026-04-21)
 - [ ] 10-02-PLAN.md — 前端 vitest 最小引入 + time-group 纯函数 + 单元测试（Wave 0，autonomous，与 10-01 并行）
 - [ ] 10-03-PLAN.md — 前端数据层：types/api/session-store/chat-store.loadHistory/useSSE 双参数（Wave 1，autonomous，depends_on 10-01）
 - [ ] 10-04-PLAN.md — Sidebar 组件 + page.tsx 组合 + Success Criteria 1-4 手验（Wave 2，autonomous=false，depends_on 10-02 + 10-03）
