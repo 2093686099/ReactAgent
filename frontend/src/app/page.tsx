@@ -6,16 +6,17 @@ import { ChatArea } from "@/components/chat/chat-area";
 import { ChatInput } from "@/components/chat/chat-input";
 import { MessageList } from "@/components/chat/message-list";
 import { AppLayout } from "@/components/layout/app-layout";
+import { Sidebar } from "@/components/sidebar/sidebar";
 import { useAutoScroll } from "@/hooks/use-auto-scroll";
 import { useSSE } from "@/hooks/use-sse";
-import { invokeChat, resumeChat } from "@/lib/api";
+import { invokeChat, loadHistory as apiLoadHistory, resumeChat } from "@/lib/api";
 import { useChatStore } from "@/stores/chat-store";
+import { useSessionStore } from "@/stores/session-store";
 
 export default function ChatPage() {
   const messages = useChatStore((state) => state.messages);
   const status = useChatStore((state) => state.status);
   const currentTaskId = useChatStore((state) => state.currentTaskId);
-  const activeSessionId = useChatStore((state) => state.activeSessionId);
   const errorMessage = useChatStore((state) => state.errorMessage);
 
   const addUserMessage = useChatStore((state) => state.addUserMessage);
@@ -24,8 +25,17 @@ export default function ChatPage() {
   const setCurrentTaskId = useChatStore((state) => state.setCurrentTaskId);
   const setError = useChatStore((state) => state.setError);
   const updateHitlStatus = useChatStore((state) => state.updateHitlStatus);
+  const loadHistoryAction = useChatStore((state) => state.loadHistory);
 
-  useSSE(currentTaskId);
+  const activeSessionId = useSessionStore((s) => s.activeSessionId);
+  const sessions = useSessionStore((s) => s.sessions);
+  const setActive = useSessionStore((s) => s.setActive);
+  const createLocal = useSessionStore((s) => s.createLocal);
+  const deleteOptimistic = useSessionStore((s) => s.deleteOptimistic);
+  const restoreSession = useSessionStore((s) => s.restoreSession);
+  const loadSessions = useSessionStore((s) => s.loadSessions);
+
+  useSSE(currentTaskId, activeSessionId);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const { scrollToBottom, onScroll, shouldAutoScroll } = useAutoScroll(scrollRef);
@@ -39,6 +49,88 @@ export default function ChatPage() {
     });
     return () => cancelAnimationFrame(id);
   }, [messages, status, shouldAutoScroll, scrollToBottom]);
+
+  const handleSwitch = async (id: string) => {
+    // D-09 切换顺序：
+    // ① 旧 SSE 由 useSSE effect cleanup 自然关闭（sessionId/taskId 变化触发）
+    // ② 清空 chat-store
+    loadHistoryAction([]);
+    // ③ 切换 active
+    setActive(id);
+    setCurrentTaskId(null);
+    // ④ 拉历史
+    try {
+      const hist = await apiLoadHistory(id);
+      const msgs =
+        hist.truncate_after_active_task && hist.messages.length > 0
+          ? hist.messages.slice(0, -1)
+          : hist.messages;
+      loadHistoryAction(msgs);
+      // ⑤ reattach
+      if (hist.active_task?.task_id) {
+        setCurrentTaskId(hist.active_task.task_id);
+        setStatus(
+          hist.active_task.status === "interrupted" ? "interrupted" : "streaming",
+        );
+      }
+    } catch (err) {
+      const m = err instanceof Error ? err.message : "加载历史失败";
+      toast.error(m);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    // sessions 闭包是删除前快照（state 变更在下一次 render 才反映）
+    const target = sessions.find((s) => s.id === id);
+    if (!target) return;
+    try {
+      await deleteOptimistic(id);
+    } catch {
+      toast.error("删除失败");
+      return;
+    }
+    toast(`已删除 ${target.title || "新会话"}`, {
+      duration: 8000,
+      action: {
+        label: "撤销",
+        onClick: async () => {
+          await restoreSession(target);
+        },
+      },
+    });
+    // 若删的是当前活跃会话，自动切到列表下一条；空列表则进入空态
+    if (id === activeSessionId) {
+      const next = sessions.find((s) => s.id !== id);
+      if (next) {
+        await handleSwitch(next.id);
+      } else {
+        createLocal();
+        loadHistoryAction([]);
+        setCurrentTaskId(null);
+      }
+    }
+  };
+
+  const handleNew = () => {
+    createLocal();
+    loadHistoryAction([]);
+    setCurrentTaskId(null);
+  };
+
+  // 首次进入自动选中最近会话（P-04）—— didInitRef 保证只触发一次
+  const didInitRef = useRef(false);
+  useEffect(() => {
+    if (didInitRef.current) return;
+    didInitRef.current = true;
+    void (async () => {
+      const list = await loadSessions().catch(() => [] as typeof sessions);
+      if (list.length > 0) {
+        await handleSwitch(list[0].id);
+      }
+      // 空列表 → 保留 session-store 初始 createLocal 生成的 id
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleApprove = async (taskId: string) => {
     updateHitlStatus(taskId, "approved");
@@ -113,7 +205,11 @@ export default function ChatPage() {
   };
 
   return (
-    <AppLayout>
+    <AppLayout
+      sidebar={
+        <Sidebar onSwitch={handleSwitch} onDelete={handleDelete} onNew={handleNew} />
+      }
+    >
       <ChatArea>
         <MessageList
           messages={messages}
