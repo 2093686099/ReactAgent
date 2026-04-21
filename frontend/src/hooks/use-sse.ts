@@ -27,7 +27,7 @@ function formatHitlDescription(toolName: string, args?: Record<string, unknown>)
   return `Agent 想要${label}：${summary}`;
 }
 
-export function useSSE(taskId: string | null): void {
+export function useSSE(taskId: string | null, sessionId: string): void {
   const appendToken = useChatStore((state) => state.appendToken);
   const addToolSegment = useChatStore((state) => state.addToolSegment);
   const updateToolSegment = useChatStore((state) => state.updateToolSegment);
@@ -124,6 +124,7 @@ export function useSSE(taskId: string | null): void {
     };
   }, [
     taskId,
+    sessionId,
     appendToken,
     addToolSegment,
     updateToolSegment,
