@@ -3,8 +3,17 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import sys
 from contextlib import asynccontextmanager
+
+import certifi
+
+# macOS / 无系统 CA 场景下 urllib (高德 MCP key 可用性检查等) 默认找不到 CA
+# 会 SSL CERTIFICATE_VERIFY_FAILED；显式绑到 certifi 提供的 CA bundle
+os.environ.setdefault("SSL_CERT_FILE", certifi.where())
+os.environ.setdefault("REQUESTS_CA_BUNDLE", certifi.where())
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
