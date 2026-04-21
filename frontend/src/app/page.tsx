@@ -102,7 +102,9 @@ export default function ChatPage() {
     });
     // 若删的是当前活跃会话，自动切到列表下一条；空列表则进入空态
     if (id === activeSessionId) {
-      const next = sessions.find((s) => s.id !== id);
+      // 读删除后的 store 快照，避免依赖闭包里的旧 sessions 数组（WR-01）
+      const remaining = useSessionStore.getState().sessions;
+      const next = remaining[0];
       if (next) {
         await handleSwitch(next.id);
       } else {
