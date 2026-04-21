@@ -32,3 +32,23 @@ export interface InvokeResponse {
   session_id: string;
   status: string;
 }
+
+export interface Session {
+  id: string;
+  title: string;
+  created_at: number;
+  last_updated: number; // 后端秒级 float
+  status: string; // "idle" | "running" | ...
+  last_task_id?: string | null;
+}
+
+export interface ActiveTask {
+  task_id: string;
+  status: string;
+}
+
+export interface HistoryResponse {
+  messages: Message[];
+  active_task: ActiveTask | null;
+  truncate_after_active_task: boolean;
+}

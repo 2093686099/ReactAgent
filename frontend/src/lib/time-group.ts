@@ -1,13 +1,4 @@
-// NOTE: Session 类型将由 Phase 10 Plan 03 Task 1 加入 @/lib/types.ts。
-// 届时把下方局部 type 删除，改为 `import type { Session } from "@/lib/types";`。
-type Session = {
-  id: string;
-  title: string;
-  created_at: number;
-  last_updated: number;
-  status: string;
-  last_task_id?: string | null;
-};
+import type { Session } from "@/lib/types";
 
 export type TimeGroup = "today" | "yesterday" | "week" | "older";
 
