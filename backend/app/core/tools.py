@@ -3,8 +3,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import json
-from urllib.request import urlopen
 
 import httpx
 from langchain_core.tools import tool
@@ -47,28 +45,10 @@ async def close_rag_client() -> None:
         _rag_client = None
 
 
-def _is_amap_key_valid() -> bool:
-    """轻量检查高德 MCP key 是否可用。"""
-    if not settings.amap_maps_api_key:
-        return False
-    url = f"https://mcp.amap.com/mcp?key={settings.amap_maps_api_key}"
-    try:
-        with urlopen(url, timeout=8) as response:
-            body = response.read().decode("utf-8", errors="ignore")
-            data = json.loads(body)
-            # 高德错误格式：{"status":"0","info":"INVALID_USER_KEY","infocode":"10001"}
-            if isinstance(data, dict) and data.get("status") == "0":
-                logger.warning(f"高德 MCP key 无效：info={data.get('info')} infocode={data.get('infocode')}")
-                return False
-            return True
-    except Exception as exc:
-        logger.warning(f"高德 MCP key 可用性检查失败，将禁用 researcher：{exc}")
-        return False
-
-
 async def get_mcp_tools():
     """获取 MCP 工具（高德地图），分配给 researcher 子 Agent。
-    首次调用走网络，后续返回缓存。asyncio.Lock 保证并发安全。"""
+    首次调用走网络，后续返回缓存。asyncio.Lock 保证并发安全。
+    高德 MCP 不可用时（key 缺失 / 网络 / key 非法）降级为空列表，不阻塞主 Agent。"""
     global _mcp_tools_cache, _mcp_lock
     if _mcp_tools_cache is not None:
         return _mcp_tools_cache
@@ -77,17 +57,21 @@ async def get_mcp_tools():
     async with _mcp_lock:
         if _mcp_tools_cache is not None:
             return _mcp_tools_cache
-        if not _is_amap_key_valid():
+        if not settings.amap_maps_api_key:
             _mcp_tools_cache = []
             return _mcp_tools_cache
-        client = MultiServerMCPClient({
-            "amap-maps-streamableHTTP": {
-                "url": f"https://mcp.amap.com/mcp?key={settings.amap_maps_api_key}",
-                "transport": "streamable_http",
-            }
-        })
-        _mcp_tools_cache = await client.get_tools()
-        logger.info(f"MCP 工具已缓存，共 {len(_mcp_tools_cache)} 个")
+        try:
+            client = MultiServerMCPClient({
+                "amap-maps-streamableHTTP": {
+                    "url": f"https://mcp.amap.com/mcp?key={settings.amap_maps_api_key}",
+                    "transport": "streamable_http",
+                }
+            })
+            _mcp_tools_cache = await client.get_tools()
+            logger.info(f"MCP 工具已缓存，共 {len(_mcp_tools_cache)} 个")
+        except Exception as exc:
+            logger.warning(f"高德 MCP 初始化失败，将禁用 researcher：{exc}")
+            _mcp_tools_cache = []
         return _mcp_tools_cache
 
 
