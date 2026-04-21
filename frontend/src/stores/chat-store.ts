@@ -5,7 +5,6 @@ type ChatState = {
   messages: Message[];
   status: ChatStatus;
   currentTaskId: string | null;
-  activeSessionId: string;
   errorMessage: string | null;
   addUserMessage: (text: string) => void;
   addAssistantMessage: () => void;
@@ -18,15 +17,9 @@ type ChatState = {
   updateHitlStatus: (taskId: string, status: HitlStatus) => void;
   setStatus: (status: ChatStatus) => void;
   setCurrentTaskId: (taskId: string | null) => void;
+  loadHistory: (messages: Message[]) => void;
   reset: () => void;
 };
-
-function createSessionId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `session-${Date.now()}`;
-}
 
 function createId(prefix: string): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -86,7 +79,6 @@ export const useChatStore = create<ChatState>((set) => ({
   messages: [],
   status: "idle",
   currentTaskId: null,
-  activeSessionId: createSessionId(),
   errorMessage: null,
 
   addUserMessage: (text) =>
@@ -304,6 +296,21 @@ export const useChatStore = create<ChatState>((set) => ({
 
   setCurrentTaskId: (taskId) => set({ currentTaskId: taskId }),
 
+  // 从后端拉回的历史消息一次性注入，不走 token buffer / 不触发 streaming 状态
+  loadHistory: (messages) => {
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+    tokenBuffer = "";
+    set({
+      messages,
+      status: "idle",
+      currentTaskId: null,
+      errorMessage: null,
+    });
+  },
+
   reset: () => {
     if (rafId) {
       cancelAnimationFrame(rafId);
@@ -315,7 +322,6 @@ export const useChatStore = create<ChatState>((set) => ({
       status: "idle",
       currentTaskId: null,
       errorMessage: null,
-      activeSessionId: createSessionId(),
     });
   },
 }));
