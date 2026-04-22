@@ -1,5 +1,6 @@
 # backend/app/core/streaming.py
 import logging
+import re
 from typing import AsyncGenerator, Any
 
 from langgraph.graph.state import CompiledStateGraph
@@ -15,6 +16,18 @@ EVT_TODO = "todo"
 EVT_HITL = "hitl"
 EVT_DONE = "done"
 EVT_ERROR = "error"
+
+# deepagents 的 `task` 工具是子 Agent 委派的入口，args 结构为 {description, subagent_type}。
+# 前端展示更有信息量的应该是子 Agent 名（researcher / data_analyst），而不是 `task` 本身 —
+# 所以解析 chunk 时 sniff 出 subagent_type 覆盖工具名再下发事件。
+_TASK_TOOL_NAME = "task"
+_SUBAGENT_TYPE_RE = re.compile(r'"subagent_type"\s*:\s*"([^"]+)"')
+
+
+def _extract_subagent(args_buffer: str) -> str | None:
+    """从（可能不完整的）JSON 字符串中抽取 subagent_type 字面量。"""
+    m = _SUBAGENT_TYPE_RE.search(args_buffer)
+    return m.group(1) if m else None
 
 
 def _extract_text(content: Any) -> str:
@@ -57,6 +70,13 @@ async def parse_agent_events(
     """
     final_text = ""
 
+    # task 工具委派追踪：
+    # 首个 chunk 带 name="task" + id，之后的 chunk 只带 id + args 片段。
+    # 等 args 能解出 subagent_type 时再发 "calling"（换成子 Agent 名），
+    # 配对 ToolMessage 时按 tool_call_id 回查并用同名发 "done"。
+    # {tool_call_id: {"args": "累积片段", "resolved": "researcher" | None, "emitted": bool}}
+    task_calls: dict[str, dict] = {}
+
     # 只订阅需要的模式。values 对流式没用，去掉减少开销。
     async for mode, data in agent.astream(
         input=agent_input,
@@ -75,11 +95,40 @@ async def parse_agent_events(
                 # 前端只展示"AI 正在调用 XXX 工具"，不暴露 args，详细信息走后端日志
                 for tc in (getattr(message_chunk, "tool_call_chunks", None) or []):
                     tool_name = tc.get("name")
+                    tool_id = tc.get("id")
+                    tool_args = tc.get("args") or ""
+
+                    # 首个 chunk：建表 / 对非 task 直接下发 calling
                     if tool_name:
                         logger.info(
-                            f"tool call: {tool_name} args={tc.get('args')} id={tc.get('id')}"
+                            f"tool call: {tool_name} args={tool_args} id={tool_id}"
                         )
-                        yield EVT_TOOL, {"name": tool_name, "status": "calling"}
+                        if tool_name == _TASK_TOOL_NAME and tool_id:
+                            task_calls[tool_id] = {
+                                "args": tool_args,
+                                "resolved": None,
+                                "emitted": False,
+                            }
+                        else:
+                            yield EVT_TOOL, {"name": tool_name, "status": "calling"}
+                        continue
+
+                    # 后续 chunk：只可能是 task 的 args 片段 — 累积后尝试解析
+                    if tool_id and tool_id in task_calls:
+                        entry = task_calls[tool_id]
+                        entry["args"] += tool_args
+                        if not entry["emitted"]:
+                            resolved = _extract_subagent(entry["args"])
+                            if resolved:
+                                entry["resolved"] = resolved
+                                entry["emitted"] = True
+                                logger.info(
+                                    f"task → subagent: {resolved} id={tool_id}"
+                                )
+                                yield EVT_TOOL, {
+                                    "name": resolved,
+                                    "status": "calling",
+                                }
 
                 # 文本 token — 仅 AI 的自然语言输出
                 text = _extract_text(getattr(message_chunk, "content", None))
@@ -90,7 +139,26 @@ async def parse_agent_events(
             elif msg_type == "ToolMessage":
                 # 工具结果 — 只发一个"完成"信号到前端，内容写日志
                 tool_name = getattr(message_chunk, "name", "") or "unknown"
+                tool_call_id = getattr(message_chunk, "tool_call_id", None)
                 result_content = getattr(message_chunk, "content", "")
+
+                # task 工具返回时，按 id 回查用子 Agent 名替代
+                if tool_name == _TASK_TOOL_NAME and tool_call_id in task_calls:
+                    entry = task_calls.pop(tool_call_id)
+                    resolved = entry.get("resolved") or _extract_subagent(
+                        entry.get("args", "")
+                    )
+                    if resolved:
+                        # calling 之前可能因为 subagent_type 出现晚/没出现过而未发 —
+                        # 补一条保证前端能形成 calling → done 的完整段
+                        if not entry.get("emitted"):
+                            yield EVT_TOOL, {
+                                "name": resolved,
+                                "status": "calling",
+                            }
+                        tool_name = resolved
+                    # resolve 失败时就回落到 "task" 原名，下面正常发 done
+
                 logger.info(
                     f"tool result: {tool_name} content={str(result_content)[:500]}"
                 )

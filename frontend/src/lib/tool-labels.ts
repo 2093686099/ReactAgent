@@ -1,8 +1,16 @@
 const TOOL_LABELS: Record<string, string> = {
   book_hotel: "预订酒店",
+  multiply: "数值计算",
+  query_knowledge_base: "查询知识库",
   execute: "执行命令",
   write_file: "写入文件",
   edit_file: "修改文件",
+  read_file: "读取文件",
+  // deepagents 子 Agent 委派（backend streaming 层已把 `task` 替换为子 Agent 名）
+  researcher: "高德地图分析 Agent",
+  data_analyst: "数据库分析 Agent",
+  task: "委派 Agent",
+  // 高德地图 MCP
   maps_geo: "解析地址",
   maps_regeocode: "反向解析坐标",
   maps_text_search: "搜索地点",
@@ -15,6 +23,11 @@ const TOOL_LABELS: Record<string, string> = {
   maps_direction_bicycling: "规划骑行路线",
   maps_distance: "计算两点距离",
   maps_ip_location: "定位 IP 位置",
+  // MySQL data_analyst 内部工具
+  sql_db_list_tables: "列数据库表",
+  sql_db_schema: "查询表结构",
+  sql_db_query: "执行 SQL 查询",
+  sql_db_query_checker: "SQL 语法检查",
 };
 
 export function getToolLabel(toolName: string): string {
