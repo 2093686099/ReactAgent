@@ -7,6 +7,7 @@ type ChatState = {
   status: ChatStatus;
   currentTaskId: string | null;
   errorMessage: string | null;
+  connectionStatus: "connected" | "reconnecting";
   addUserMessage: (text: string) => void;
   addAssistantMessage: () => void;
   appendToken: (text: string) => void;
@@ -17,8 +18,13 @@ type ChatState = {
   addHitlSegment: (toolName: string, description: string, taskId: string) => void;
   updateHitlStatus: (taskId: string, status: HitlStatus) => void;
   setStatus: (status: ChatStatus) => void;
+  setConnectionStatus: (status: "connected" | "reconnecting") => void;
   setCurrentTaskId: (taskId: string | null) => void;
   setTodos: (todos: Todo[]) => void;
+  resolveLastPendingHitl: (
+    decision: Exclude<HitlStatus, "pending">,
+    toolName?: string | null,
+  ) => void;
   loadHistory: (payload: { messages: Message[]; todos: Todo[] }) => void;
   reset: () => void;
 };
@@ -83,6 +89,7 @@ export const useChatStore = create<ChatState>((set) => ({
   status: "idle",
   currentTaskId: null,
   errorMessage: null,
+  connectionStatus: "connected",
 
   addUserMessage: (text) =>
     set((state) => ({
@@ -297,9 +304,77 @@ export const useChatStore = create<ChatState>((set) => ({
 
   setStatus: (status) => set({ status }),
 
+  setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
+
   setCurrentTaskId: (taskId) => set({ currentTaskId: taskId }),
 
   setTodos: (todos) => set({ todos }),
+
+  // Addresses review concern: avoid resolving the wrong pending HITL when multiple cards exist.
+  resolveLastPendingHitl: (decision, toolName) =>
+    set((state) => {
+      if (!state.messages.length) {
+        return {};
+      }
+
+      const nextMessages = [...state.messages];
+      const lastMessage = nextMessages[nextMessages.length - 1];
+      if (lastMessage.role !== "assistant") {
+        return {};
+      }
+
+      const hasToolHint = typeof toolName === "string" && toolName.length > 0;
+      let targetIndex = -1;
+      for (let i = lastMessage.segments.length - 1; i >= 0; i--) {
+        const segment = lastMessage.segments[i];
+        if (segment.type !== "hitl" || segment.status !== "pending") {
+          continue;
+        }
+        if (hasToolHint) {
+          if (segment.toolName === toolName) {
+            targetIndex = i;
+            break;
+          }
+          continue;
+        }
+        targetIndex = i;
+        break;
+      }
+      if (targetIndex === -1) {
+        return {};
+      }
+
+      const targetSegment = lastMessage.segments[targetIndex];
+      const targetToolName = targetSegment.type === "hitl" ? targetSegment.toolName : null;
+
+      let toolBackfillIndex = -1;
+      if ((decision === "rejected" || decision === "feedback") && targetToolName) {
+        for (let i = targetIndex - 1; i >= 0; i--) {
+          const segment = lastMessage.segments[i];
+          if (
+            segment.type === "tool" &&
+            segment.name === targetToolName &&
+            segment.status !== "rejected"
+          ) {
+            toolBackfillIndex = i;
+            break;
+          }
+        }
+      }
+
+      const segments = lastMessage.segments.map((segment, index) => {
+        if (index === targetIndex && segment.type === "hitl") {
+          return { ...segment, status: decision };
+        }
+        if (index === toolBackfillIndex && segment.type === "tool") {
+          return { ...segment, status: "rejected" as const };
+        }
+        return segment;
+      });
+
+      nextMessages[nextMessages.length - 1] = { ...lastMessage, segments };
+      return { messages: nextMessages };
+    }),
 
   // 从后端拉回的历史消息一次性注入，不走 token buffer / 不触发 streaming 状态
   loadHistory: (payload) => {
@@ -314,6 +389,7 @@ export const useChatStore = create<ChatState>((set) => ({
       status: "idle",
       currentTaskId: null,
       errorMessage: null,
+      connectionStatus: "connected",
     });
   },
 
@@ -329,6 +405,7 @@ export const useChatStore = create<ChatState>((set) => ({
       status: "idle",
       currentTaskId: null,
       errorMessage: null,
+      connectionStatus: "connected",
     });
   },
 }));
