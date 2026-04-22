@@ -157,6 +157,13 @@ export function useSSE(taskId: string | null, sessionId: string): void {
       } catch {
         return; // 坏帧不中断流
       }
+      // D-02 originally defined three terminal mappings (approve→approved,
+      // edit→edited, reject→rejected), but v2.0's HitlStatus only carries
+      // two visible ones. `edit` collapses into `approved` here because
+      // edited_args are deliberately not propagated over the wire (see
+      // 12-CONTEXT.md "additional_constraints" / D-02 note). If we ever
+      // want to render an "edited" indicator distinctly, we need to both
+      // extend HitlStatus and start shipping edited_args in hitl_resolved.
       if (payload.decision === "approve" || payload.decision === "edit") {
         resolveLastPendingHitl("approved", payload.tool_name);
       } else if (payload.decision === "reject") {

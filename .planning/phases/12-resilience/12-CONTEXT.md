@@ -34,7 +34,7 @@
 
 ### G-01 修复 —— HITL resolved 信号（入本 Phase 前置依赖 RESIL-02）
 
-- **D-02:** 后端在 `/api/chat/resume` 返回前，**向 `task:{task_id}:events` Stream XADD 一帧 `event='hitl_resolved'`**，data payload 形状：`{tool_name: str, call_id: str | null, decision: "approve" | "edit" | "reject", ts: float}`。前端 `use-sse.ts` 增加 `hitl_resolved` listener，在重放/实时路径上都把最近一条仍处于 `pending` 状态的 HitlSegment 根据 `decision` 映射为终态（`approved` / `edited` / `rejected`），由 chat-store 的新 action `resolveLastPendingHitl(decision)` 完成幂等修改。
+- **D-02:** 后端在 `/api/chat/resume` 返回前，**向 `task:{task_id}:events` Stream XADD 一帧 `event='hitl_resolved'`**，data payload 形状：`{tool_name: str, call_id: str | null, decision: "approve" | "edit" | "reject", ts: float}`。前端 `use-sse.ts` 增加 `hitl_resolved` listener，在重放/实时路径上都把最近一条仍处于 `pending` 状态的 HitlSegment 根据 `decision` 映射为终态（v2.0：`approve→approved`，**`edit→approved`**，`reject→rejected`；`edit` 与 `approve` 在前端视觉上合流，因为 `HitlStatus` 类型只暴露两种可见终态，且 `edited_args` 刻意不随 `hitl_resolved` 下行 —— 见 `additional_constraints`；独立 `edited` 状态与 edited-args 渲染 defer 到后续版本），由 chat-store 的新 action `resolveLastPendingHitl(decision)` 完成幂等修改。
 - **D-02-rationale:** 最小改动覆盖 G-01 根因 —— Phase 09 segments 模型已经把 HITL 作为消息内嵌气泡持久化在 checkpoint 里（经由 Agent 消息），一旦 resume 完成、下一条 token 流又进来，用户原本的 HitlSegment 已经有效地完成使命；缺的是"前端在 from_id=0 重放时如何判断它已经被解决过"—— 靠一帧 resolve 事件即可。此事件与 `done`、`error` 等同性质，都是生命周期信号，不污染现有事件模型。
 
 ### RESIL-02 —— 页面刷新 HITL 恢复
