@@ -1,8 +1,9 @@
 import { create } from "zustand";
-import type { ChatStatus, HitlStatus, Message, ToolSegment } from "@/lib/types";
+import type { ChatStatus, HitlStatus, Message, Todo, ToolSegment } from "@/lib/types";
 
 type ChatState = {
   messages: Message[];
+  todos: Todo[];
   status: ChatStatus;
   currentTaskId: string | null;
   errorMessage: string | null;
@@ -17,7 +18,8 @@ type ChatState = {
   updateHitlStatus: (taskId: string, status: HitlStatus) => void;
   setStatus: (status: ChatStatus) => void;
   setCurrentTaskId: (taskId: string | null) => void;
-  loadHistory: (messages: Message[]) => void;
+  setTodos: (todos: Todo[]) => void;
+  loadHistory: (payload: { messages: Message[]; todos: Todo[] }) => void;
   reset: () => void;
 };
 
@@ -77,6 +79,7 @@ function flushTokenBuffer(set: (fn: (state: ChatState) => Partial<ChatState>) =>
 
 export const useChatStore = create<ChatState>((set) => ({
   messages: [],
+  todos: [],
   status: "idle",
   currentTaskId: null,
   errorMessage: null,
@@ -296,15 +299,18 @@ export const useChatStore = create<ChatState>((set) => ({
 
   setCurrentTaskId: (taskId) => set({ currentTaskId: taskId }),
 
+  setTodos: (todos) => set({ todos }),
+
   // 从后端拉回的历史消息一次性注入，不走 token buffer / 不触发 streaming 状态
-  loadHistory: (messages) => {
+  loadHistory: (payload) => {
     if (rafId) {
       cancelAnimationFrame(rafId);
       rafId = 0;
     }
     tokenBuffer = "";
     set({
-      messages,
+      messages: payload.messages,
+      todos: payload.todos,
       status: "idle",
       currentTaskId: null,
       errorMessage: null,
@@ -319,6 +325,7 @@ export const useChatStore = create<ChatState>((set) => ({
     tokenBuffer = "";
     set({
       messages: [],
+      todos: [],
       status: "idle",
       currentTaskId: null,
       errorMessage: null,

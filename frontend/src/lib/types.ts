@@ -25,6 +25,11 @@ export interface Message {
   timestamp: number;
 }
 
+export type Todo = {
+  content: string;
+  status: "pending" | "in_progress" | "completed";
+};
+
 export type ChatStatus = "idle" | "sending" | "streaming" | "interrupted" | "error";
 
 export interface InvokeResponse {
@@ -49,6 +54,7 @@ export interface ActiveTask {
 
 export interface HistoryResponse {
   messages: Message[];
+  todos: Todo[];
   active_task: ActiveTask | null;
   truncate_after_active_task: boolean;
 }
