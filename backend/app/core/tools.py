@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import asyncio
+import functools
 import logging
 
 import httpx
-from langchain_core.tools import tool
+from langchain_core.tools import BaseTool, ToolException, tool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from pydantic import BaseModel, Field
 
@@ -16,6 +17,66 @@ logger = logging.getLogger(__name__)
 
 _mcp_tools_cache: list | None = None
 _mcp_lock: asyncio.Lock | None = None
+
+# AMAP (高德) rate-limit markers that are safe to retry with backoff.
+# Free-tier keys cap at ~2 QPS; the researcher sub-agent can fan out and trip this.
+_AMAP_RETRYABLE_MARKERS = (
+    "CUQPS_HAS_EXCEEDED_THE_LIMIT",
+    "ACCESS_TOO_FREQUENT",
+)
+_MCP_MAX_RETRIES = 3
+_MCP_BASE_BACKOFF_S = 1.0
+_MCP_CONCURRENCY = 2
+
+_mcp_semaphore: asyncio.Semaphore | None = None
+
+
+def _get_mcp_semaphore() -> asyncio.Semaphore:
+    """Lazy per-loop semaphore. Bounds concurrent MCP tool calls to keep AMAP happy."""
+    global _mcp_semaphore
+    if _mcp_semaphore is None:
+        _mcp_semaphore = asyncio.Semaphore(_MCP_CONCURRENCY)
+    return _mcp_semaphore
+
+
+def _is_amap_rate_limit(exc: BaseException) -> bool:
+    msg = str(exc)
+    return any(marker in msg for marker in _AMAP_RETRYABLE_MARKERS)
+
+
+def _wrap_mcp_tool_with_retry(tool_obj: BaseTool) -> BaseTool:
+    """Replace the tool's coroutine with one that serializes via a semaphore and
+    retries AMAP rate-limit errors with exponential backoff. Non-retryable errors
+    bubble unchanged so the agent can see them."""
+    original = getattr(tool_obj, "coroutine", None)
+    if original is None:
+        return tool_obj
+
+    @functools.wraps(original)
+    async def retrying(*args, **kwargs):
+        sem = _get_mcp_semaphore()
+        last_exc: BaseException | None = None
+        for attempt in range(_MCP_MAX_RETRIES):
+            try:
+                async with sem:
+                    return await original(*args, **kwargs)
+            except ToolException as exc:
+                if not _is_amap_rate_limit(exc):
+                    raise
+                last_exc = exc
+                if attempt == _MCP_MAX_RETRIES - 1:
+                    break
+                backoff = _MCP_BASE_BACKOFF_S * (2 ** attempt)
+                logger.warning(
+                    "AMAP rate-limited on %s (attempt %d/%d), backing off %.1fs: %s",
+                    tool_obj.name, attempt + 1, _MCP_MAX_RETRIES, backoff, exc,
+                )
+                await asyncio.sleep(backoff)
+        assert last_exc is not None
+        raise last_exc
+
+    tool_obj.coroutine = retrying
+    return tool_obj
 
 _rag_client: httpx.AsyncClient | None = None
 
@@ -67,7 +128,8 @@ async def get_mcp_tools():
                     "transport": "streamable_http",
                 }
             })
-            _mcp_tools_cache = await client.get_tools()
+            raw_tools = await client.get_tools()
+            _mcp_tools_cache = [_wrap_mcp_tool_with_retry(t) for t in raw_tools]
             logger.info(f"MCP 工具已缓存，共 {len(_mcp_tools_cache)} 个")
         except Exception as exc:
             logger.warning(f"高德 MCP 初始化失败，将禁用 researcher：{exc}")
