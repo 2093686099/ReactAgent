@@ -71,11 +71,13 @@ async def parse_agent_events(
     final_text = ""
 
     # task 工具委派追踪：
-    # 首个 chunk 带 name="task" + id，之后的 chunk 只带 id + args 片段。
-    # 等 args 能解出 subagent_type 时再发 "calling"（换成子 Agent 名），
-    # 配对 ToolMessage 时按 tool_call_id 回查并用同名发 "done"。
+    # langchain tool_call_chunks 协议：name 和 id 只在**首个** chunk 出现，
+    # 后续 delta chunk 只带 args 片段 + 同一 `index`（表示该消息里第几个 tool call）。
+    # 因此按 (message_id, index) → tool_call_id 建立映射才能把后续 args 续上去。
     # {tool_call_id: {"args": "累积片段", "resolved": "researcher" | None, "emitted": bool}}
     task_calls: dict[str, dict] = {}
+    # (message_id, index) → tool_call_id，只收 task 工具
+    index_to_task_id: dict[tuple[str, int], str] = {}
 
     # 只订阅需要的模式。values 对流式没用，去掉减少开销。
     async for mode, data in agent.astream(
@@ -93,12 +95,14 @@ async def parse_agent_events(
             if msg_type == "AIMessageChunk":
                 # 检测工具调用发起 — tool_call_chunks 是流式增量，name 只在首个 chunk 出现
                 # 前端只展示"AI 正在调用 XXX 工具"，不暴露 args，详细信息走后端日志
+                chunk_msg_id = getattr(message_chunk, "id", "") or ""
                 for tc in (getattr(message_chunk, "tool_call_chunks", None) or []):
                     tool_name = tc.get("name")
                     tool_id = tc.get("id")
                     tool_args = tc.get("args") or ""
+                    tool_index = tc.get("index")
 
-                    # 首个 chunk：建表 / 对非 task 直接下发 calling
+                    # 首个 chunk：携带 name + id（有时还携带完整/部分 args）
                     if tool_name:
                         logger.info(
                             f"tool call: {tool_name} args={tool_args} id={tool_id}"
@@ -109,19 +113,13 @@ async def parse_agent_events(
                                 "resolved": None,
                                 "emitted": False,
                             }
-                        else:
-                            yield EVT_TOOL, {"name": tool_name, "status": "calling"}
-                        continue
-
-                    # 后续 chunk：只可能是 task 的 args 片段 — 累积后尝试解析
-                    if tool_id and tool_id in task_calls:
-                        entry = task_calls[tool_id]
-                        entry["args"] += tool_args
-                        if not entry["emitted"]:
-                            resolved = _extract_subagent(entry["args"])
+                            if tool_index is not None:
+                                index_to_task_id[(chunk_msg_id, tool_index)] = tool_id
+                            # 首个 chunk 也可能带全部 args，直接尝试解析一次
+                            resolved = _extract_subagent(tool_args)
                             if resolved:
-                                entry["resolved"] = resolved
-                                entry["emitted"] = True
+                                task_calls[tool_id]["resolved"] = resolved
+                                task_calls[tool_id]["emitted"] = True
                                 logger.info(
                                     f"task → subagent: {resolved} id={tool_id}"
                                 )
@@ -129,6 +127,33 @@ async def parse_agent_events(
                                     "name": resolved,
                                     "status": "calling",
                                 }
+                        else:
+                            yield EVT_TOOL, {"name": tool_name, "status": "calling"}
+                        continue
+
+                    # 后续 chunk：只有 args + index，没有 name/id。
+                    # 按 (message_id, index) 回查对应的 task tool_call_id。
+                    if tool_index is None:
+                        continue
+                    tracked_id = index_to_task_id.get((chunk_msg_id, tool_index))
+                    if not tracked_id:
+                        continue
+                    entry = task_calls.get(tracked_id)
+                    if not entry:
+                        continue
+                    entry["args"] += tool_args
+                    if not entry["emitted"]:
+                        resolved = _extract_subagent(entry["args"])
+                        if resolved:
+                            entry["resolved"] = resolved
+                            entry["emitted"] = True
+                            logger.info(
+                                f"task → subagent: {resolved} id={tracked_id}"
+                            )
+                            yield EVT_TOOL, {
+                                "name": resolved,
+                                "status": "calling",
+                            }
 
                 # 文本 token — 仅 AI 的自然语言输出
                 text = _extract_text(getattr(message_chunk, "content", None))
@@ -145,19 +170,29 @@ async def parse_agent_events(
                 # task 工具返回时，按 id 回查用子 Agent 名替代
                 if tool_name == _TASK_TOOL_NAME and tool_call_id in task_calls:
                     entry = task_calls.pop(tool_call_id)
+                    # 清除对应 index 映射，避免长对话累积
+                    for k, v in list(index_to_task_id.items()):
+                        if v == tool_call_id:
+                            index_to_task_id.pop(k, None)
                     resolved = entry.get("resolved") or _extract_subagent(
                         entry.get("args", "")
                     )
+                    # 如果解析成功且之前没发过 calling，先补一条 —
+                    # 确保前端能形成 calling → done 的完整段
                     if resolved:
-                        # calling 之前可能因为 subagent_type 出现晚/没出现过而未发 —
-                        # 补一条保证前端能形成 calling → done 的完整段
                         if not entry.get("emitted"):
                             yield EVT_TOOL, {
                                 "name": resolved,
                                 "status": "calling",
                             }
                         tool_name = resolved
-                    # resolve 失败时就回落到 "task" 原名，下面正常发 done
+                    else:
+                        # 解析失败：保持 "task" 原名，但同样补一条 calling —
+                        # 首个 chunk 时也因为等 subagent_type 没发，不补就只剩孤 done
+                        yield EVT_TOOL, {
+                            "name": _TASK_TOOL_NAME,
+                            "status": "calling",
+                        }
 
                 logger.info(
                     f"tool result: {tool_name} content={str(result_content)[:500]}"

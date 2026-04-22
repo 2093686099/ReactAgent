@@ -48,9 +48,17 @@ def _is_amap_rate_limit(exc: BaseException) -> bool:
 
 
 def _wrap_mcp_tool_with_retry(tool_obj: BaseTool) -> BaseTool:
-    """Replace the tool's coroutine with one that serializes via a semaphore and
-    retries AMAP rate-limit errors with exponential backoff. Non-retryable errors
-    bubble unchanged so the agent can see them."""
+    """Replace the tool's coroutine with one that:
+    1. Serializes via a semaphore so free-tier AMAP QPS caps don't trip.
+    2. Retries AMAP rate-limit markers (CUQPS_HAS_EXCEEDED_THE_LIMIT) with
+       exponential backoff.
+    3. For all other ToolException (e.g. INVALID_PARAMS, UNAUTHORIZED):
+       **returns the error as a string** so it lands in the subagent as a
+       ToolMessage content. If we re-raise, the exception propagates up
+       through langgraph's ToolNode → subagent → parent task tool and kills
+       the whole invocation. Returning a string lets the agent see "this
+       call failed, try different params or explain to user" and keep going.
+    """
     original = getattr(tool_obj, "coroutine", None)
     if original is None:
         return tool_obj
@@ -65,7 +73,14 @@ def _wrap_mcp_tool_with_retry(tool_obj: BaseTool) -> BaseTool:
                     return await original(*args, **kwargs)
             except ToolException as exc:
                 if not _is_amap_rate_limit(exc):
-                    raise
+                    # Non-retryable MCP error — don't let it crash the graph.
+                    # Return as a string so the agent sees the failure as a
+                    # normal ToolMessage and can recover.
+                    logger.warning(
+                        "MCP tool %s failed (non-retryable): %s",
+                        tool_obj.name, exc,
+                    )
+                    return f"工具 {tool_obj.name} 调用失败：{exc}"
                 last_exc = exc
                 if attempt == _MCP_MAX_RETRIES - 1:
                     break
@@ -75,8 +90,14 @@ def _wrap_mcp_tool_with_retry(tool_obj: BaseTool) -> BaseTool:
                     tool_obj.name, attempt + 1, _MCP_MAX_RETRIES, backoff, exc,
                 )
                 await asyncio.sleep(backoff)
+        # Rate-limit retries exhausted — same treatment: string not raise,
+        # so the long conversation isn't killed by transient AMAP congestion.
         assert last_exc is not None
-        raise last_exc
+        logger.warning(
+            "MCP tool %s rate-limit retries exhausted: %s",
+            tool_obj.name, last_exc,
+        )
+        return f"工具 {tool_obj.name} 连续限流，暂时不可用：{last_exc}"
 
     tool_obj.coroutine = retrying
     return tool_obj
