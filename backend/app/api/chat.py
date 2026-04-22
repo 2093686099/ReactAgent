@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from app.models.chat import ChatRequest, ResumeRequest, TaskCreatedResponse
@@ -83,6 +84,20 @@ async def resume(
         request.response_type, request.args, request.action_requests or []
     )
     await task_svc.start_resume(request.task_id, command_data)
+    # Phase 12 D-02 / D-06：向事件流写一帧 hitl_resolved，让前端 from_id=0 重放时
+    # 能把对应 pending HitlSegment 收敛为终态（=G-01 修复信号）。
+    # 事件 payload 刻意最小化，不携带 edited_args（见 CONTEXT additional_constraints）。
+    action_req = (request.action_requests or [{}])[0]
+    await task_bus.publish_event(
+        request.task_id,
+        "hitl_resolved",
+        {
+            "tool_name": action_req.get("name"),
+            "call_id": action_req.get("id"),
+            "decision": request.response_type,
+            "ts": time.time(),
+        },
+    )
     # P-06: resume 路径也刷 last_updated
     await session_svc.touch(meta["session_id"], meta["user_id"])
 
