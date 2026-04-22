@@ -109,7 +109,12 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. SSE 连接断开后自动重连，并从断点续传（不丢失断线期间的事件）
   2. 页面刷新后，如果 Agent 仍在等待审批，HITL 审批卡片能恢复显示
-**Plans**: TBD
+**Plans:** 3 plans (Wave 1 backend / Wave 2 frontend / Wave 3 UAT；G-01 approve-then-switch 修复并入 RESIL-02 自然路径)
+Plans:
+- [ ] 12-01-backend-PLAN.md — Wave 1 后端：/stream 读 Last-Event-ID header + /resume 后 publish hitl_resolved + tests/test_resilience.py（autonomous=true）
+- [ ] 12-02-frontend-PLAN.md — Wave 2 前端：chat-store connectionStatus + resolveLastPendingHitl + use-sse hitl_resolved listener + reconnect-banner 组件 + chat-area 挂载 + 2 vitest 文件（autonomous=true，depends_on 12-01）
+- [ ] 12-03-uat-PLAN.md — Wave 3 人工 UAT：断网重连 / G-01 回归 / 刷新恢复 HITL / reject 闭环 4 场景 + 12-UAT.md（autonomous=false，depends_on 12-01 + 12-02）
+**UI hint**: yes
 
 ### Phase 13: RAG Source Panel + Observability
 **Goal**: 用户在 Agent 调用 RAG 知识库时能看到清晰的引用来源，系统侧能观测到 RAG 工具调用的路由分布与错误分布
@@ -134,9 +139,9 @@ Note: Phase 13 depends only on Phase 09 (Tool Call UX), can run parallel with 10
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1-7 | v1.0 | - | Complete | 2026-04-12 |
-| 8. SSE Chat Foundation | v2.0 | 0/3 | Planning done | - |
-| 9. Tool Call UX + HITL | v2.0 | 0/3 | Planning done | - |
-| 10. Session Management | v2.0 | 0/4 | Planning done | - |
-| 11. Todo Panel | v2.0 | 0/? | Not started | - |
-| 12. Resilience | v2.0 | 0/? | Not started | - |
+| 8. SSE Chat Foundation | v2.0 | 3/3 | Complete | 2026-04-13 |
+| 9. Tool Call UX + HITL | v2.0 | 3/3 | Complete | 2026-04-16 |
+| 10. Session Management | v2.0 | 4/4 | Complete | 2026-04-21 |
+| 11. Todo Panel | v2.0 | 5/5 | Complete | 2026-04-22 |
+| 12. Resilience | v2.0 | 0/3 | Planning done | - |
 | 13. RAG Source Panel + Observability | v2.0 | 0/? | Not started | - |
