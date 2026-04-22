@@ -23,7 +23,7 @@ _EXTERNAL_MODS = [
     "langchain_core", "langchain_core.runnables", "langchain_core.tools",
     "langchain_openai",
     "langchain_mcp_adapters", "langchain_mcp_adapters.client",
-    "redis", "redis.asyncio",
+    "redis", "redis.asyncio", "redis.exceptions",
 ]
 for _mod in _EXTERNAL_MODS:
     if _mod not in sys.modules:
