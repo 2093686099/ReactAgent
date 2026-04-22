@@ -40,7 +40,6 @@ class TaskService:
         user_id: str,
         session_id: str,
         query: str,
-        system_prompt: str | None = None,
     ) -> str:
         """启动一个新的 invoke 任务，返回 task_id。
 
@@ -68,7 +67,7 @@ class TaskService:
 
         agent_input = {"messages": [{"role": "user", "content": query}]}
         bg = asyncio.create_task(
-            self._run_agent(task_id, agent_input, session_id, system_prompt),
+            self._run_agent(task_id, agent_input, session_id),
             name=f"agent-{task_id}",
         )
         self._running[task_id] = bg
@@ -89,7 +88,7 @@ class TaskService:
         await task_bus.set_task_status(task_id, task_bus.STATUS_RUNNING)
 
         bg = asyncio.create_task(
-            self._run_agent(task_id, Command(resume=command_data), meta["session_id"], None),
+            self._run_agent(task_id, Command(resume=command_data), meta["session_id"]),
             name=f"agent-resume-{task_id}",
         )
         self._running[task_id] = bg
@@ -104,11 +103,10 @@ class TaskService:
         task_id: str,
         agent_input: AgentInput,
         session_id: str,
-        system_prompt: str | None,
     ) -> None:
         """后台协程：创建 agent，解析事件，写入 task_bus"""
         try:
-            agent = await self._agent_service.create_agent(system_prompt=system_prompt)
+            agent = await self._agent_service.create_agent()
             hit_interrupt = False
             async for event, data in parse_agent_events(
                 agent,

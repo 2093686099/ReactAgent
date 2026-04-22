@@ -9,7 +9,6 @@ class ChatRequest(BaseModel):
     """用户发送消息，启动新的后台 task"""
     session_id: str
     query: str
-    system_message: Optional[str] = None
 
 
 class SessionCreateRequest(BaseModel):

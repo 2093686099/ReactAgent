@@ -50,7 +50,6 @@ async def invoke(
         user_id=user_id,
         session_id=request.session_id,
         query=request.query,
-        system_prompt=request.system_message,
     )
     return TaskCreatedResponse(
         task_id=task_id,
