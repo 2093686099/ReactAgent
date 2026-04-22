@@ -145,6 +145,54 @@ async def test_truncate_when_active_task(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_messages_endpoint_returns_empty_todos(monkeypatch):
+    """todos 字段始终存在；state 无 todos 键时返回 []（RESEARCH.md Pitfall 3）"""
+    from app.core import history as history_mod
+
+    raw = [make_human("hi"), make_ai(content="done")]
+    fake_ckptr = AsyncMock()
+    fake_ckptr.aget_tuple = AsyncMock(return_value=make_checkpoint_tuple(raw))  # 不传 todos
+    monkeypatch.setattr(history_mod.db, "checkpointer", fake_ckptr)
+
+    session_svc = AsyncMock()
+    session_svc.get_session = AsyncMock(return_value={
+        "session_id": "s1", "user_id": "u1", "title": "", "last_task_id": None,
+    })
+
+    result = await history_mod.load_history_for_session("u1", "s1", session_svc)
+    assert result["todos"] == []
+
+
+@pytest.mark.asyncio
+async def test_messages_endpoint_returns_todos_from_checkpoint(monkeypatch):
+    """state.todos 有内容时正确序列化为 {content, status} dict"""
+    from app.core import history as history_mod
+
+    raw = [make_human("plan 3 steps")]
+    fake_todos = [
+        {"content": "step A", "status": "completed"},
+        {"content": "step B", "status": "in_progress"},
+        {"content": "step C", "status": "pending"},
+    ]
+    fake_ckptr = AsyncMock()
+    fake_ckptr.aget_tuple = AsyncMock(
+        return_value=make_checkpoint_tuple(raw, todos=fake_todos)
+    )
+    monkeypatch.setattr(history_mod.db, "checkpointer", fake_ckptr)
+
+    session_svc = AsyncMock()
+    session_svc.get_session = AsyncMock(return_value={
+        "session_id": "s1", "user_id": "u1", "title": "", "last_task_id": None,
+    })
+
+    result = await history_mod.load_history_for_session("u1", "s1", session_svc)
+    assert len(result["todos"]) == 3
+    assert result["todos"][0] == {"content": "step A", "status": "completed"}
+    assert result["todos"][1]["status"] == "in_progress"
+    assert result["todos"][2]["status"] == "pending"
+
+
+@pytest.mark.asyncio
 async def test_no_truncate_when_no_active_task(monkeypatch):
     """无 active_task → truncate_after_active_task=False，即便最末是 AIMessage。"""
     from app.core import history as history_mod
@@ -163,6 +211,7 @@ async def test_no_truncate_when_no_active_task(monkeypatch):
     result = await history_mod.load_history_for_session("u1", "s1", session_svc)
     assert result["active_task"] is None
     assert result["truncate_after_active_task"] is False
+    assert result["todos"] == []
 
 
 @pytest.mark.asyncio
@@ -175,11 +224,10 @@ async def test_load_history_when_checkpointer_is_none(monkeypatch):
     session_svc.get_session = AsyncMock(return_value=None)
 
     result = await history_mod.load_history_for_session("u1", "s-missing", session_svc)
-    assert result == {
-        "messages": [],
-        "active_task": None,
-        "truncate_after_active_task": False,
-    }
+    assert result["messages"] == []
+    assert result["active_task"] is None
+    assert result["truncate_after_active_task"] is False
+    assert result["todos"] == []
 
 
 @pytest.mark.asyncio
@@ -200,3 +248,4 @@ async def test_load_history_when_no_checkpoint(monkeypatch):
     assert result["messages"] == []
     assert result["active_task"] is None
     assert result["truncate_after_active_task"] is False
+    assert result["todos"] == []
