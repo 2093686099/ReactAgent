@@ -29,7 +29,6 @@ export function ReconnectBanner() {
         text-[13px] font-[510] text-[var(--color-text-secondary)]
         bg-[var(--color-bg-panel)]
         border-b border-[var(--color-border-subtle)]
-        transition-opacity duration-200
       "
     >
       <span
