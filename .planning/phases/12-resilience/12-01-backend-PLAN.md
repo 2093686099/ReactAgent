@@ -520,7 +520,7 @@ async def stream(task_id: str, from_id: str = Query("0")): ...
 |-----------|----------|-----------|-------------|-----------------|
 | T-12-01 | Tampering / Injection | `/stream` Last-Event-ID header | mitigate | Header 值作为字符串透传给 `task_bus.read_events(from_id=...)`，后者只把它当作 Redis Streams entry-id；Redis XREAD 会在 id 非法时返回空（不抛异常、不中断流），没有 SQL/shell 注入面；Header 值不落日志、不拼接到响应体 |
 | T-12-02 | Information Disclosure | `hitl_resolved` payload 含 tool_name / call_id | accept | 事件流仅按 task_id 隔离；本 Phase 不引入跨用户订阅点；`call_id` 为 LangGraph 内部 UUID，非敏感；既有 `/stream` 已经推送 tool/hitl 帧，增量风险为零 |
-| T-12-03 | Tampering | `/resume` action_requests[].name 被原样写入事件流 | mitigate | 前端 listener 按"最近 pending HITL"定位、不信任 payload.tool_name 做精确匹配（见 plan 12-02 D-08）；payload 字段只做展示，不用于权限判定 |
+| T-12-03 | Tampering | `/resume` action_requests[].name 被原样写入事件流 | mitigate | 前端 listener 仅在当前 assistant message 的 pending HITL 集合内按 `tool_name` 优先匹配；匹配不到直接 no-op，再 fallback 到“无 tool_name 时最近 pending”规则；payload 不参与权限判定 |
 | T-12-04 | Denial of Service | `Last-Event-ID` 极大值导致 Redis XREAD 永远 block | accept | 既有 `block_ms=5000` 心跳已存在；非法 entry_id Redis 返回空 → 继续 block 心跳；不构成 DoS 放大 |
 | T-12-05 | Repudiation | resume 操作无结构化日志 | accept | v2.0 观测性在 Phase 13 统一落地；本 Phase 不单独加 logger |
 </threat_model>

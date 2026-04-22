@@ -32,7 +32,7 @@ must_haves:
   key_links:
     - from: "UAT scenario 1 (主动断网)"
       to: "RESIL-01 + D-01 + D-04 + D-08"
-      via: "人工观察 banner 出现/消失 + 后端日志 Last-Event-ID"
+      via: "人工观察 banner 出现/消失 + 浏览器重连请求 Headers 里的 Last-Event-ID"
       pattern: "reconnect-banner"
     - from: "UAT scenario 2 (approve-then-switch)"
       to: "G-01 + D-02 + D-09 resolveLastPendingHitl"
@@ -87,14 +87,14 @@ Output: `12-UAT.md` 包含所有场景的执行记录、截图（可选）、结
 
   <what-built>
     - 后端 `/api/chat/stream/{task_id}` 读 `Last-Event-ID` header 作为续传起点（plan 12-01 Task 1）
-    - 前端 `use-sse.ts` 在 onerror 未收终态时只置 `connectionStatus="reconnecting"`，不主动 close
+    - 前端 `use-sse.ts` 在 onerror 未收终态时只置 `connectionStatus="reconnecting"`，收到终态 error/done 时会把连接状态收回 `connected`
     - 前端 `ReconnectBanner` 顶栏轻提示（debounce 1s 出现，重连成功 300ms 消失）
   </what-built>
 
   <action>
     **前置准备：**
     1. 启动基础设施：`cd docker && docker-compose up -d && cd ..`
-    2. 启动后端：`cd backend && python -m app.main`（保留 terminal 观察日志）
+    2. 启动后端：`cd backend && python -m app.main`
     3. 启动前端：`cd frontend && npm run dev`
     4. 打开 Chrome 访问 `http://localhost:3000`
     5. DevTools → Network 面板常开；勾选 "Preserve log"
@@ -109,7 +109,7 @@ Output: `12-UAT.md` 包含所有场景的执行记录、截图（可选）、结
     5. 观察：
        - 顶栏 banner 在 300ms 内消失
        - 聊天区域的 token/tool 事件继续补齐（断网期间事件不丢）
-       - 后端日志里看到带 `Last-Event-ID: <某 entry_id>` 的 GET /api/chat/stream/{task_id}
+       - DevTools Network 中重连后的 `/api/chat/stream/{task_id}` 请求 Headers 里可见 `Last-Event-ID: <某 entry_id>`
     6. 看到 `done` 事件后整条消息完成
 
     **把每项判定结果记到 `12-UAT.md` §Scenario 1。**
@@ -121,7 +121,7 @@ Output: `12-UAT.md` 包含所有场景的执行记录、截图（可选）、结
     - [ ] banner 样式符合 Linear 克制美学（无黄/红色）
     - [ ] 恢复网络 300ms 内 banner 消失
     - [ ] 断网期间的事件在重连后全部补齐（消息未截断）
-    - [ ] 后端日志可见 Last-Event-ID header（证明 D-01 链路通）
+    - [ ] DevTools 里重连请求 Headers 可见 Last-Event-ID（证明 D-01 链路通）
     - [ ] 无控制台 error / warning（React、zustand、SSE 相关）
   </how-to-verify>
 
@@ -155,8 +155,8 @@ Output: `12-UAT.md` 包含所有场景的执行记录、截图（可选）、结
 
   <what-built>
     - 后端 `/resume` 成功后 XADD 一帧 `hitl_resolved`（plan 12-01 Task 2）
-    - 前端 `use-sse.ts` 收到 `hitl_resolved` 调 `resolveLastPendingHitl("approved")`
-    - 前端 `chat-store.resolveLastPendingHitl` 幂等 no-op（PATTERNS §6）
+    - 前端 `use-sse.ts` 收到 `hitl_resolved` 调 `resolveLastPendingHitl("approved", payload.tool_name)`
+    - 前端 `chat-store.resolveLastPendingHitl` 按 `tool_name` 优先匹配 pending HITL，匹配不到才 no-op / fallback
   </what-built>
 
   <action>
@@ -172,7 +172,7 @@ Output: `12-UAT.md` 包含所有场景的执行记录、截图（可选）、结
     7. **关键判定：** 之前 approve 过的 HITL 是否仍显示 pending 状态 + 按钮？
        - 预期：**不应再出现 pending 按钮** —— HitlCard 保持 approved 终态（G-01 修复成功）
        - 若再次出现 pending 按钮 → G-01 回归未达成，需诊断
-    8. **额外验证：** DevTools → Network → EventSource 面板（Chrome 99+）或后端日志，确认 from_id=0 重放时：
+    8. **额外验证：** DevTools → Network → EventSource 面板（Chrome 99+），确认 from_id=0 重放时：
        - 流过一条 `event: hitl` 帧（尝试重建 HitlCard）
        - 紧接着流过一条 `event: hitl_resolved` 帧（把 pending 收敛为 approved）
 
@@ -192,7 +192,7 @@ Output: `12-UAT.md` 包含所有场景的执行记录、截图（可选）、结
 
   <acceptance_criteria>
     - 3 条判定都写入 12-UAT.md
-    - 若未达成：记录具体切换时序 + 网络面板截图路径 + 推测原因（backend publish 没发 / frontend listener 没触发 / resolveLastPendingHitl 幂等判断错位）
+    - 若未达成：记录具体切换时序 + 网络面板截图路径 + 推测原因（backend publish 没发 / frontend listener 没触发 / resolveLastPendingHitl tool_name 匹配错位）
   </acceptance_criteria>
 
   <done>
@@ -234,7 +234,7 @@ Output: `12-UAT.md` 包含所有场景的执行记录、截图（可选）、结
        - 一条 `hitl_resolved` 帧（本次 approve 后端 publish 的新事件）
        - 两条帧可能都从 from_id=0 重放出（视时序），但最终 HitlCard 保持 approved 终态
 
-    **负样本警示：** 若刷新后 HitlCard 直接显示 approved（按钮消失）—— 错误行为；意味着 `resolveLastPendingHitl` 错误地把一条未 resolve 的 pending 也收敛了，需记录并排查。
+    **负样本警示：** 若刷新后 HitlCard 直接显示 approved（按钮消失）—— 错误行为；意味着 `resolveLastPendingHitl` 在没有匹配到真实目标时仍错误收敛了一条 pending 卡，需记录并排查。
 
     **把结果记到 12-UAT.md §Scenario 3。**
   </action>
@@ -276,8 +276,8 @@ Output: `12-UAT.md` 包含所有场景的执行记录、截图（可选）、结
 
   <what-built>
     - plan 12-01 Task 2：`/resume` 在 `response_type === "reject"` 时也发 `hitl_resolved`，payload.decision = "reject"
-    - plan 12-02 Task 2：前端 listener 把 "reject" → `resolveLastPendingHitl("rejected")`
-    - plan 12-02 Task 1：`resolveLastPendingHitl("rejected")` 会把前置同 toolName 的 tool pill 回写为 "rejected"
+    - plan 12-02 Task 2：前端 listener 把 "reject" → `resolveLastPendingHitl("rejected", payload.tool_name)`
+    - plan 12-02 Task 1：`resolveLastPendingHitl("rejected", toolName)` 会把目标卡前置同 toolName 的 tool pill 回写为 "rejected"
   </what-built>
 
   <action>
@@ -308,7 +308,7 @@ Output: `12-UAT.md` 包含所有场景的执行记录、截图（可选）、结
 
   <acceptance_criteria>
     - 4 条判定写入 12-UAT.md
-    - tool pill 未回写（仍显示 done）时，记录现象并推测：`resolveLastPendingHitl` 回写分支漏了 / decision 映射不对
+    - tool pill 未回写（仍显示 done）时，记录现象并推测：`resolveLastPendingHitl` 回写分支漏了 / decision 映射不对 / toolName 匹配到了错误 card
   </acceptance_criteria>
 
   <done>

@@ -27,12 +27,13 @@ must_haves:
   truths:
     - "断线期间浏览器 EventSource 自动重连时，UI 在顶栏显示 '连接中断，正在重连…' banner（debounce 1s 后出现，重连成功 300ms 后消失）"
     - "重连路径 onerror 不主动 close EventSource（否则会截断浏览器原生自动重连）"
-    - "收到 hitl_resolved 事件时，messages 中最近一条 status='pending' 的 HitlSegment 被收敛为对应终态（approve/edit → approved，reject → rejected）"
-    - "resolveLastPendingHitl 幂等：找不到 pending HITL 时 no-op（支撑 from_id=0 全量重放多次收敛 = G-01 修复）"
+    - "收到 hitl_resolved 事件时，前端优先按 payload.tool_name 匹配最近一条 status='pending' 的 HitlSegment；仅当 tool_name 缺省时才 fallback 到最近一条 pending HITL（approve/edit → approved，reject → rejected）"
+    - "resolveLastPendingHitl 幂等：找不到可匹配的 pending HITL 时 no-op（支撑 from_id=0 全量重放多次收敛 = G-01 修复）"
+    - "服务端发送 data-bearing error 或收到 done/error 终态后，connectionStatus 必须回到 connected，banner 不会卡在 reconnecting"
     - "刷新页面时，既有 handleSwitch 路径 + D-01 header 续传 + hitl_resolved 重放收敛三者共同完成 RESIL-02"
   artifacts:
     - path: "frontend/src/stores/chat-store.ts"
-      provides: "connectionStatus 字段 + setConnectionStatus + resolveLastPendingHitl action"
+      provides: "connectionStatus 字段 + setConnectionStatus + resolveLastPendingHitl(decision, toolName?) action"
       contains: "resolveLastPendingHitl"
     - path: "frontend/src/hooks/use-sse.ts"
       provides: "hitl_resolved listener + onerror 不 close + 每个 listener 同步 connectionStatus"
@@ -47,12 +48,12 @@ must_haves:
       provides: "connectionStatus 状态机单测（D-14 前半）"
       min_lines: 30
     - path: "frontend/src/stores/__tests__/chat-store.resolve-hitl.test.ts"
-      provides: "resolveLastPendingHitl 幂等 / 最近语义 / rejected 回写 tool pill 单测（D-14 后半）"
+      provides: "resolveLastPendingHitl 幂等 / tool_name 定位 / fallback / rejected 回写 tool pill 单测（D-14 后半）"
       min_lines: 60
   key_links:
     - from: "use-sse.ts::hitl_resolved listener"
       to: "chat-store::resolveLastPendingHitl"
-      via: "decision → HitlStatus 映射（approve/edit → approved, reject → rejected）"
+      via: "decision → HitlStatus 映射（approve/edit → approved, reject → rejected）+ tool_name 优先匹配"
       pattern: "resolveLastPendingHitl"
     - from: "use-sse.ts::onerror"
       to: "chat-store::setConnectionStatus('reconnecting')"
@@ -65,9 +66,9 @@ must_haves:
 ---
 
 <objective>
-落地 Phase 12 前端侧全部改动：`chat-store` 加 `connectionStatus` 字段 + `resolveLastPendingHitl` action（D-09）；`use-sse` 加 `hitl_resolved` listener + 细化 onerror（D-08）；新建 `reconnect-banner.tsx`（D-10）并挂载到 chat-area header 上方（D-11）；vitest 单测覆盖 D-14。
+落地 Phase 12 前端侧全部改动：`chat-store` 加 `connectionStatus` 字段 + `resolveLastPendingHitl(decision, toolName?)` action（D-09）；`use-sse` 加 `hitl_resolved` listener + 细化 onerror（D-08）；新建 `reconnect-banner.tsx`（D-10）并挂载到 chat-area header 上方（D-11）；vitest 单测覆盖 D-14。
 
-Purpose: 让 RESIL-01（断线自动重连 + 续传）对用户可见 —— banner 给出反馈；让 RESIL-02（刷新恢复 HITL）自然闭环 —— `from_id=0` 重放时 `hitl_resolved` 帧把 pending HITL 收敛为终态（= G-01 修复）。前端改面极小，绝大多数是在既有管道上叠加一帧事件 + 一个字段 + 一个小组件。
+Purpose: 让 RESIL-01（断线自动重连 + 续传）对用户可见 —— banner 给出反馈且终态错误不会遗留 reconnecting 假象；让 RESIL-02（刷新恢复 HITL）自然闭环 —— `from_id=0` 重放时 `hitl_resolved` 帧按 `tool_name` 优先收敛正确的 pending HITL（= G-01 修复，且避免多 pending 场景错收敛）。前端改面仍然很小，但 review 反馈要求把“按最后一个 pending 收敛”的隐含假设改成显式、可验证的匹配规则。
 
 Output: chat-store / use-sse 两处小改 + 新建 banner 组件 + chat-area 挂载点 + 两个 vitest 文件。
 </objective>
@@ -120,9 +121,9 @@ status: "idle",
 currentTaskId: null,
 errorMessage: null,
 
-# 现有 chat-store updateHitlStatus action（219-279 行）是本 plan resolveLastPendingHitl 的直接模板：
+# 现有 chat-store updateHitlStatus action（219-279 行）提供扫描和 tool pill 回写模板：
 # - 从 messages 末尾向前扫
-# - 找最后一条 assistant message 的 segments 里最近一个 status==="pending" 的 hitl segment
+# - 命中 hitl segment 后可基于 toolName 做精确定位
 # - 如果 decision ∈ {"rejected", "feedback"}，同步把前置同名 tool pill 的 status 回写为 "rejected"
 
 # 后端新事件契约（plan 12-01 Task 2 落地）
@@ -157,7 +158,7 @@ export function ChatArea({ children }: { children: ReactNode }) {
 <tasks>
 
 <task type="auto" tdd="true">
-  <name>Task 1: chat-store 加 connectionStatus 字段 + resolveLastPendingHitl action + 单测</name>
+  <name>Task 1: chat-store 加 connectionStatus 字段 + resolveLastPendingHitl(decision, toolName?) action + 单测</name>
   <files>frontend/src/stores/chat-store.ts, frontend/src/stores/__tests__/chat-store.connection-status.test.ts, frontend/src/stores/__tests__/chat-store.resolve-hitl.test.ts</files>
 
   <read_first>
@@ -173,12 +174,14 @@ export function ChatArea({ children }: { children: ReactNode }) {
     - 初始 `connectionStatus` 为 `"connected"`
     - `setConnectionStatus(s)` 直接 set，不做校验
     - `reset()` / `loadHistory()` 收尾时 `connectionStatus` 回到 `"connected"`
-    - `resolveLastPendingHitl(decision)`：
+    - `resolveLastPendingHitl(decision, toolName?)`：
       * messages 为空 → no-op（不触发 re-render）
       * 最后一条 message 不是 assistant → no-op
-      * assistant message 里找不到 status==='pending' 的 hitl segment → no-op（幂等核心）
+      * 若传入 `toolName`，优先匹配最近一条 `segment.type === "hitl" && segment.status === "pending" && segment.toolName === toolName`
+      * 若 `toolName` 缺省/为空，才 fallback 到最近一条 pending HITL
+      * assistant message 里找不到可匹配的 pending hitl segment → no-op（幂等核心）
       * 找到时，把它 status 改为 decision；若 decision ∈ {"rejected","feedback"} 且能在更靠前位置找到同 toolName 的 tool pill（status 非 "rejected"），把它的 status 回写为 "rejected"
-      * 多个 pending hitl 共存时，只改最后那一条（"最近"语义）
+      * 多个 pending hitl 共存且 `toolName` 可区分时，只改目标 tool 对应那一条；不得误改其他 pending HITL
   </behavior>
 
   <action>
@@ -188,7 +191,10 @@ export function ChatArea({ children }: { children: ReactNode }) {
        ```typescript
        connectionStatus: "connected" | "reconnecting";
        setConnectionStatus: (status: "connected" | "reconnecting") => void;
-       resolveLastPendingHitl: (decision: HitlStatus) => void;
+       resolveLastPendingHitl: (
+         decision: Exclude<HitlStatus, "pending">,
+         toolName?: string | null,
+       ) => void;
        ```
        （HitlStatus 已从 `@/lib/types` import，如未 import 顺手加上）
 
@@ -199,9 +205,16 @@ export function ChatArea({ children }: { children: ReactNode }) {
 
     3. **Actions**：
        - `setConnectionStatus: (connectionStatus) => set({ connectionStatus }),`
-       - `resolveLastPendingHitl` —— 沿用 `updateHitlStatus` 的"从后向前扫、找最近 pending"模式（直接照抄 PATTERNS §6 的完整实现，复制到文件 actions 区合适位置；**不要改 `updateHitlStatus` 本身** —— 那是 Phase 09 路径）
+       - `resolveLastPendingHitl` —— 沿用 `updateHitlStatus` 的扫描/回写骨架，但把定位规则改成：
+         1. 从最后一条 assistant message 的 segments 末尾向前扫
+         2. 若传入 `toolName`，优先找 `type === "hitl" && status === "pending" && toolName === 入参`
+         3. 若没传 `toolName`，再找最近一条 `status === "pending"` 的 hitl
+         4. 命中后按 `decision` 更新该 hitl；若 `decision === "rejected" || decision === "feedback"`，把命中 hitl 前面最近一条同 `toolName` 的非 rejected tool pill 回写成 `rejected`
+         5. 全程 no-op 路径返回 `{}`，不要制造无意义 re-render
+         **不要改 `updateHitlStatus` 本身** —— 那是 Phase 09 交互路径
        - `reset` action：把 `connectionStatus: "connected"` 加入回写集
-       - `loadHistory` action 的 `.then(...)` / 成功分支：同样把 `connectionStatus: "connected"` 加入（用 `setState` 时一并写，或在 reset 的调用链里天然包含）；若 loadHistory 在失败分支也需要修复状态，同理
+       - `loadHistory` action：同样把 `connectionStatus: "connected"` 加入整体替换 state（仓库现状是同步注入 payload，不存在 `.then(...)` 分支）
+       - 这个 action 的注释里加一句：`Addresses review concern: avoid resolving the wrong pending HITL when multiple cards exist`
 
     约束：
     - 不改 `updateHitlStatus` / `addHitlSegment`（Phase 09 路径）
@@ -214,19 +227,20 @@ export function ChatArea({ children }: { children: ReactNode }) {
     - `initial state is 'connected'`
     - `setConnectionStatus flips between connected and reconnecting`（双向）
     - `reset restores connectionStatus to 'connected'`（先置 reconnecting 再 reset）
-    - `loadHistory flow 完成后 connectionStatus 回到 connected`（可 mock `api.loadHistory` 或直接测 reset 分支——如果 loadHistory 不便单测，允许删这条并在 acceptance 说明理由）
+    - `loadHistory replaces state and restores connectionStatus to 'connected'`
 
     beforeEach 复位 state 时必须显式写上 `connectionStatus: "connected"`（防止 test 顺序污染）。
 
     ### 1.3 `frontend/src/stores/__tests__/chat-store.resolve-hitl.test.ts`（NEW）
 
-    至少覆盖 6 个场景：
+    至少覆盖 7 个场景：
     - `no-op when no messages`
     - `no-op when last message is user`
     - `no-op when no pending hitl exists`（幂等核心；G-01 关键）
-    - `resolves the most recent pending hitl to approved`
+    - `resolves the pending hitl whose toolName matches the payload hint`
+    - `falls back to the most recent pending hitl when toolName is missing`
     - `reject decision backfills preceding same-tool tool pill to 'rejected'`
-    - `multiple pending hitl: only the last one changes`
+    - `multiple pending hitl: different toolName leaves non-target cards untouched`
     - `idempotent: calling twice, second call is no-op`（显式断言 state 引用未变或状态未二次变化）
 
     测试数据构造参考 PATTERNS §12。断言风格：`useChatStore.getState().messages[0].segments[n]` + type narrowing。
@@ -240,14 +254,14 @@ export function ChatArea({ children }: { children: ReactNode }) {
     - `chat-store.ts` ChatState 类型含 `connectionStatus / setConnectionStatus / resolveLastPendingHitl`
     - 初始 state 含 `connectionStatus: "connected"`
     - `reset()` 会把 `connectionStatus` 重置为 "connected"
-    - `resolveLastPendingHitl(decision)` 存在且 no-op 路径不触发 re-render
-    - 两个 test 文件各自 ≥ 3 / ≥ 6 个 `it`，全部绿
+    - `resolveLastPendingHitl(decision, toolName?)` 存在且 no-op 路径不触发 re-render
+    - 两个 test 文件各自 ≥ 3 / ≥ 7 个 `it`，全部绿
     - `npx vitest run` 全量（含 Phase 10/11 既有）全绿
     - `tsc --noEmit` 零报错
   </acceptance_criteria>
 
   <done>
-    chat-store 前端契约就绪，`use-sse` 可以在 Task 2 里消费 `setConnectionStatus` / `resolveLastPendingHitl`；两个单测文件覆盖 D-14 全部场景。
+    chat-store 前端契约就绪，`use-sse` 可以在 Task 2 里消费 `setConnectionStatus` / `resolveLastPendingHitl(decision, toolName?)`；两个单测文件覆盖 D-14 全部场景，并显式锁死 review 提出的多 pending 错收敛风险。
   </done>
 </task>
 
@@ -262,12 +276,12 @@ export function ChatArea({ children }: { children: ReactNode }) {
   </read_first>
 
   <behavior>
-    - 收到 `hitl_resolved` 且 payload.decision === "approve" 或 "edit" → 调 `resolveLastPendingHitl("approved")`
-    - 收到 `hitl_resolved` 且 payload.decision === "reject" → 调 `resolveLastPendingHitl("rejected")`
+    - 收到 `hitl_resolved` 且 payload.decision === "approve" 或 "edit" → 调 `resolveLastPendingHitl("approved", payload.tool_name)`
+    - 收到 `hitl_resolved` 且 payload.decision === "reject" → 调 `resolveLastPendingHitl("rejected", payload.tool_name)`
     - 其他 decision 值或 payload 坏帧 → return（和既有 token listener 容错风格一致）
-    - 每个 listener（token / tool / hitl / hitl_resolved / todo / done）首行调 `setConnectionStatus("connected")` —— 收到任何一帧即视为已连上
+    - 每个 listener（token / tool / hitl / hitl_resolved / todo / done / data-bearing error）首行调 `setConnectionStatus("connected")` —— 收到任何一帧即视为已连上
     - `onerror`：
-      * 若已收到终态事件 → close + setStatus("idle")（保持既有行为，只是调整执行顺序）
+      * 若已收到终态事件 → `setConnectionStatus("connected")` + close + setStatus("idle")（终态后不遗留 reconnecting）
       * 否则 → `setConnectionStatus("reconnecting")`；**不 close、不调 setError**（让浏览器继续原生自动重连并带 Last-Event-ID）
   </behavior>
 
@@ -282,7 +296,7 @@ export function ChatArea({ children }: { children: ReactNode }) {
        ```typescript
        eventSource.addEventListener("hitl_resolved", (event) => {
          setConnectionStatus("connected");
-         let payload: { decision?: string };
+         let payload: { decision?: string; tool_name?: string | null };
          try {
            payload = JSON.parse((event as MessageEvent).data);
          } catch {
@@ -291,23 +305,30 @@ export function ChatArea({ children }: { children: ReactNode }) {
          if (payload.decision === "approve" || payload.decision === "edit") {
            // 注：edit 在前端视为批准的变体（参数已修改后批准），
            // 不使用 "feedback"（那是 09-D 前端独有的 reject+message 路径，resume API 没有）
-           resolveLastPendingHitl("approved");
+           resolveLastPendingHitl("approved", payload.tool_name);
          } else if (payload.decision === "reject") {
-           resolveLastPendingHitl("rejected");
+           resolveLastPendingHitl("rejected", payload.tool_name);
          }
        });
        ```
+       在 listener 上方补一句注释：
+       `Addresses review concern: prefer payload.tool_name so multiple pending HITL cards do not collapse onto the wrong one.`
 
     3. 在 **每个**既有 listener（token / tool / hitl / todo / done）函数体第一行（`try` 之前）加：
        ```typescript
        setConnectionStatus("connected");
        ```
-       （error listener 不加 —— 它本身就是异常路径）
+       并且对既有 `eventSource.addEventListener("error", (event) => { ... })` 也补一行 `setConnectionStatus("connected");`
+       放在 `const maybeMessageEvent = event as MessageEvent;` 之前。原因：
+       - 这是服务端主动发出的终态 error 事件，不是网络断流
+       - 若不收敛成 connected，随后浏览器触发的 `onerror` 会把 banner 留在 reconnecting 假象
+       - 这里是 `Addresses review concern: terminal error must not leave stale reconnect banner`
 
     4. 替换 `onerror`：
        ```typescript
        eventSource.onerror = () => {
          if (receivedTerminalEvent) {
+           setConnectionStatus("connected");
            eventSource.close();
            setStatus("idle");
            return;
@@ -333,8 +354,8 @@ export function ChatArea({ children }: { children: ReactNode }) {
 
   <acceptance_criteria>
     - `use-sse.ts` 新增 `eventSource.addEventListener("hitl_resolved", ...)`
-    - 5 个既有 listener（token / tool / hitl / todo / done）开头各有一行 `setConnectionStatus("connected")`
-    - `onerror` 替换完成：已收终态才 close；未收终态只置 reconnecting（**无 eventSource.close()**、**无 setError**）
+    - 6 个既有 listener（token / tool / hitl / todo / done / data-bearing error）开头各有一行 `setConnectionStatus("connected")`
+    - `onerror` 替换完成：已收终态时先 `setConnectionStatus("connected")` 再 close；未收终态只置 reconnecting（**无 eventSource.close()**、**无 setError**）
     - useEffect deps 数组含 `setConnectionStatus` / `resolveLastPendingHitl`
     - `tsc --noEmit` 零报错
     - `vitest run` 全量绿（Task 1 两个新文件 + Phase 10/11 既有）
@@ -342,7 +363,7 @@ export function ChatArea({ children }: { children: ReactNode }) {
   </acceptance_criteria>
 
   <done>
-    断线时浏览器自动重连路径不被 onerror 截断；任意一帧落地即切回 connected；hitl_resolved 入库收敛 pending HITL。
+    断线时浏览器自动重连路径不被 onerror 截断；任意一帧落地即切回 connected；终态 error 不遗留 banner；hitl_resolved 按 `tool_name` 优先收敛正确的 pending HITL。
   </done>
 </task>
 
@@ -455,17 +476,17 @@ export function ChatArea({ children }: { children: ReactNode }) {
 | Boundary | Description |
 |----------|-------------|
 | EventSource (browser) → React app | SSE 帧由后端推送；浏览器解析事件名/data 后交给 listener |
-| `hitl_resolved` payload → chat-store | decision 字段直接驱动状态迁移；tool_name / call_id 仅展示 |
+| `hitl_resolved` payload → chat-store | decision 字段直接驱动状态迁移；`tool_name` 参与匹配目标 HITL，`call_id` 当前仅随契约透传 |
 | `connectionStatus` → banner UI | 单向状态流；banner 无用户交互 |
 
 ## STRIDE Threat Register
 
 | Threat ID | Category | Component | Disposition | Mitigation Plan |
 |-----------|----------|-----------|-------------|-----------------|
-| T-12-06 | Tampering | `hitl_resolved` payload 注入非法 decision | mitigate | listener 内白名单校验 decision ∈ {"approve","edit","reject"}，其他值直接 return；JSON.parse 失败 return |
+| T-12-06 | Tampering | `hitl_resolved` payload 注入非法 decision / 伪造 tool_name | mitigate | listener 内白名单校验 decision ∈ {"approve","edit","reject"}；tool_name 只在本地 assistant message 的 pending HITL 集合中做匹配，匹配不到直接 no-op；JSON.parse 失败 return |
 | T-12-07 | DoS (UI flicker) | 高频 hitl_resolved 重放时 banner 闪动 | mitigate | banner 用 debounce 1s + 300ms 过渡，高频切换期间不重渲染；resolveLastPendingHitl 幂等 no-op 分支不触发 zustand re-render |
 | T-12-08 | Information Disclosure | banner 文案泄漏内部状态 | accept | 文案仅"连接中断，正在重连…"，不含 task_id / url / 错误堆栈 |
-| T-12-09 | Misalignment | listener 把 decision="reject" 错映射为 "feedback" | mitigate | Task 2 action 明确注释 edit→approved / reject→rejected 映射；Task 1 的 resolve-hitl test 断言 reject 场景最终 status === "rejected" |
+| T-12-09 | Misalignment | listener 把 decision="reject" 错映射为 "feedback" 或误收敛错误 card | mitigate | Task 2 action 明确注释 edit→approved / reject→rejected 映射；Task 1 的 resolve-hitl test 断言按 tool_name 精确定位目标 card，reject 场景最终 status === "rejected" |
 | T-12-10 | Tampering | onerror 里误调 close() 截断浏览器原生重连 | mitigate | Task 2 acceptance_criteria 明确"onerror 未收终态时无 eventSource.close()"；代码审查 + UAT 场景 1 主动断网验证 |
 </threat_model>
 
@@ -480,7 +501,7 @@ export function ChatArea({ children }: { children: ReactNode }) {
 <success_criteria>
 1. chat-store 扩展后 Phase 10/11 既有测试全绿（无回归）
 2. Phase 12 新增 vitest ≥ 9 个 `it` 全绿
-3. 断网模拟场景 banner 出现且浏览器 EventSource 自动重连，后端收到 Last-Event-ID
+3. 断网模拟场景 banner 出现且浏览器 EventSource 自动重连，终态 error 不会让 banner 卡死
 4. `page.tsx` / `session-store.ts` / `api.ts` / `types.ts` / `app-layout.tsx` 零改动
 5. banner 样式无 warning 色 / 无自造 token
 </success_criteria>
