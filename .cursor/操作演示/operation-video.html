@@ -1,0 +1,1491 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReAct Agent — 操作演示</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;510;590;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═════════════════════════════════════════════════
+   Operation video — self-contained single-file demo
+   Source of truth: scene.jsx + video.css (in same folder)
+   ═════════════════════════════════════════════════ */
+html, body { margin: 0; height: 100%; background: #050607; overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif; color: #d0d6e0; }
+* { box-sizing: border-box; }
+button { font-family: inherit; }
+
+:root {
+  --bg-deepest: #08090a;
+  --bg-panel: #0f1011;
+  --bg-surface: #191a1b;
+  --bg-hover: rgba(255,255,255,0.04);
+  --fg1: #f7f8f8;
+  --fg2: #d0d6e0;
+  --fg3: #8a8f98;
+  --fg4: #62666d;
+  --border-subtle: rgba(255,255,255,0.05);
+  --border-standard: rgba(255,255,255,0.08);
+  --border-focus: rgba(255,255,255,0.12);
+  --accent: #5e6ad2;
+  --accent-violet: #7170ff;
+  --accent-hover: #828fff;
+  --success: #10b981;
+  --error: #ef4444;
+  --warn: #f59e0b;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+@keyframes ov-spin { to { transform: rotate(360deg); } }
+.spin-ico { animation: ov-spin 1s linear infinite; transform-origin: center; }
+@keyframes ripple {
+  0% { transform: scale(0.5); opacity: 1; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+@keyframes ov-caret-blink { 0%,45%{opacity:1} 50%,95%{opacity:0} 100%{opacity:1} }
+@keyframes ov-dot-pulse {
+  0%,80%,100%{opacity:0.3; transform:scale(0.9)}
+  40%{opacity:1; transform:scale(1)}
+}
+@keyframes ov-hitl-glow {
+  0%,100%{ box-shadow: 0 0 0 2px rgba(245,158,11,0.04), 0 0 12px rgba(245,158,11,0.12); }
+  50%    { box-shadow: 0 0 0 5px rgba(245,158,11,0.14), 0 0 22px rgba(245,158,11,0.24); }
+}
+@keyframes ov-hitl-dot {
+  0%   { box-shadow: 0 0 0 0 rgba(245,158,11,0.55); }
+  100% { box-shadow: 0 0 0 8px rgba(245,158,11,0); }
+}
+@keyframes ov-pulse-green {
+  0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.55); }
+  100% { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+}
+@keyframes ov-pop-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+/* ═══ App grid ═══ */
+.ov-app {
+  position: absolute; inset: 0;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) 280px;
+  height: 100%;
+  background: var(--bg-deepest);
+  color: var(--fg1);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv01","ss03";
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  font-size: 13px;
+}
+
+/* ═══ Sidebar (B-style) ═══ */
+.ov-sb { background: var(--bg-deepest); display: flex; flex-direction: column;
+  border-right: 1px solid var(--border-subtle); min-height: 0; }
+.ov-sb-header { padding: 10px 10px 8px; }
+.ov-sb-agent {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-standard);
+}
+.ov-sb-agent-av {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-violet));
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1);
+  flex: none;
+}
+.ov-sb-agent-meta { flex: 1; min-width: 0; }
+.ov-sb-agent-name { font-size: 12.5px; font-weight: 510; color: var(--fg1); }
+.ov-sb-agent-status { font-size: 10px; color: var(--fg4);
+  display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+.pulse-green {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--success);
+  box-shadow: 0 0 0 0 rgba(16,185,129,0.6);
+  animation: ov-pulse-green 1.8s ease-out infinite;
+}
+.ov-sb-section { padding: 0 10px 10px; display: flex; flex-direction: column; gap: 6px; }
+.ov-sb-new {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: 6px;
+  font-size: 12.5px; font-weight: 510; color: var(--fg1);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-standard);
+  cursor: pointer; width: 100%; font-family: inherit;
+}
+.ov-sb-new svg { flex: none; }
+.ov-sb-search {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: 6px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border-subtle);
+}
+.ov-sb-search svg { color: var(--fg4); flex: none; }
+.ov-sb-search input {
+  flex: 1; border: none; background: transparent; outline: none;
+  color: var(--fg1); font-family: inherit; font-size: 12px;
+}
+.ov-sb-search input::placeholder { color: var(--fg4); }
+.ov-sb-scroll { flex: 1; overflow: hidden; padding: 0 10px; min-height: 0; }
+.ov-sb-group { margin-bottom: 10px; }
+.ov-sb-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 4px 6px;
+  font-size: 10.5px; font-weight: 510; color: var(--fg4);
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
+.ov-sb-head-count { font-family: var(--font-mono); font-size: 10px; color: var(--fg4); font-weight: 400; }
+.ov-sess {
+  position: relative;
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px 7px 12px; border-radius: 5px;
+  font-size: 12.5px; color: var(--fg3);
+  cursor: pointer; line-height: 1.4;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ov-sess-rule {
+  position: absolute; left: 4px; top: 7px; bottom: 7px;
+  width: 2px; border-radius: 2px; background: transparent;
+}
+.ov-sess.active { background: rgba(113,112,255,0.08); color: var(--fg1); font-weight: 510; }
+.ov-sess.active .ov-sess-rule { background: var(--accent-violet); }
+.ov-sess > span:not(.ov-sess-rule) {
+  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ov-sb-tools {
+  padding: 12px 10px; border-top: 1px solid var(--border-subtle);
+  max-height: 260px; overflow: hidden;
+}
+.ov-sb-tools-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 4px 8px;
+  font-size: 10.5px; font-weight: 510; color: var(--fg4);
+  letter-spacing: 0.03em;
+}
+.ov-sb-tools-count { font-family: var(--font-mono); font-size: 10px; }
+.ov-sb-tools-list { display: flex; flex-direction: column; gap: 1px; }
+.ov-tool-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 8px; border-radius: 4px;
+  font-family: var(--font-mono); font-size: 11.5px; color: var(--fg3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ov-tool-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); flex: none; }
+.ov-tool-dot.warn { background: var(--warn); }
+.ov-tool-row > span:nth-child(2) { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ov-tool-tag {
+  font-family: var(--font-sans);
+  font-size: 9.5px; padding: 1px 5px; border-radius: 3px;
+  background: rgba(245,158,11,0.12); color: var(--warn);
+  border: 1px solid rgba(245,158,11,0.22); flex: none;
+}
+.ov-sb-foot {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px; border-top: 1px solid var(--border-subtle);
+}
+.ov-sb-avatar {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: linear-gradient(135deg, #4c4d8a, #7170ff);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 12px; font-weight: 590;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); flex: none;
+}
+.ov-sb-user-meta { flex: 1; min-width: 0; }
+.ov-sb-name { font-size: 12.5px; color: var(--fg1); font-weight: 510; }
+.ov-sb-plan { font-size: 10.5px; color: var(--fg4); margin-top: 1px; }
+.ov-sb-icon {
+  background: transparent; border: none; color: var(--fg4);
+  width: 24px; height: 24px; border-radius: 4px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+
+/* ═══ Main column ═══ */
+.ov-main { display: flex; flex-direction: column; background: var(--bg-panel);
+  min-height: 0; min-width: 0; }
+.ov-main-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-panel); flex: none;
+}
+.ov-main-head-l { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+.ov-main-title { font-size: 14px; font-weight: 510; color: var(--fg1); letter-spacing: -0.182px; }
+.ov-main-meta { font-size: 11.5px; color: var(--fg4); }
+.ov-main-head-r { display: flex; gap: 4px; }
+.ov-head-btn {
+  background: transparent; border: none;
+  width: 28px; height: 28px; border-radius: 5px;
+  color: var(--fg3); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ov-head-btn.active { background: rgba(113,112,255,0.12); color: var(--accent-hover); }
+
+.ov-messages {
+  flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0;
+  scrollbar-width: none; scroll-behavior: smooth;
+}
+.ov-messages::-webkit-scrollbar { display: none; }
+.ov-messages-inner {
+  max-width: 760px; margin: 0 auto;
+  padding: 32px 28px 28px;
+  display: flex; flex-direction: column; gap: 20px;
+  min-height: 100%;
+}
+.ov-empty {
+  flex: 1; display: flex; flex-direction: column; gap: 14px;
+  align-items: center; justify-content: center;
+  min-height: 420px; color: var(--fg3);
+}
+.ov-empty-mark {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-violet));
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(113,112,255,0.25), inset 0 0 0 1px rgba(255,255,255,0.1);
+}
+.ov-empty-text { font-size: 15px; color: var(--fg2); letter-spacing: -0.165px; }
+
+.ov-u-row { display: flex; justify-content: flex-end; animation: ov-pop-in 320ms ease-out; }
+.ov-u-bub {
+  max-width: 85%; width: fit-content;
+  background: var(--bg-hover);
+  color: var(--fg1);
+  border-radius: 14px 14px 4px 14px;
+  padding: 9px 14px;
+  font-size: 14px; letter-spacing: -0.165px; line-height: 1.5;
+  white-space: pre-wrap;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+.ov-a-row { display: flex; gap: 14px; align-items: flex-start; animation: ov-pop-in 320ms ease-out; }
+.ov-a-gutter { flex: none; padding-top: 2px; }
+.ov-a-avatar {
+  width: 22px; height: 22px; border-radius: 6px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-violet));
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+.ov-a-bub {
+  flex: 1; min-width: 0;
+  color: var(--fg2);
+  font-size: 14px; line-height: 1.65; letter-spacing: -0.165px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.ov-a-p { margin: 0; animation: ov-pop-in 280ms ease-out; }
+.ov-a-p strong { color: var(--fg1); font-weight: 590; }
+.ov-a-ul {
+  list-style: none; padding: 0; margin: 2px 0 4px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.ov-a-ul li {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 13.5px; color: var(--fg2); line-height: 1.55;
+  padding-left: 6px;
+}
+.ov-a-ul li::before { content: '•'; color: var(--fg4); flex: none; margin-right: 2px; }
+.ov-bullet-ic { flex: none; font-size: 13px; }
+.ov-result-ok { color: var(--success); font-size: 15px; }
+
+.ov-tool-wrap { display: flex; animation: ov-pop-in 240ms ease-out; }
+.tool-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border-subtle);
+  font-size: 12px; color: var(--fg3);
+}
+.tool-chip-ic {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--fg3); flex: none;
+}
+.tool-chip.calling .tool-chip-ic { color: var(--accent-violet); background: rgba(113,112,255,0.14); }
+.tool-chip.done .tool-chip-ic { color: var(--success); background: rgba(16,185,129,0.14); }
+.tool-chip-label { color: var(--fg2); font-weight: 510; }
+.tool-chip-agent {
+  font-family: var(--font-mono); font-size: 10.5px;
+  color: var(--accent-hover);
+  padding: 1px 6px; border-radius: 3px;
+  background: rgba(113,112,255,0.1);
+  border: 1px solid rgba(113,112,255,0.18);
+}
+.tool-chip-sep { width: 1px; height: 10px; background: var(--border-subtle); }
+.tool-chip-code { font-family: var(--font-mono); font-size: 11px; color: var(--fg4); }
+
+.ov-dots { display: inline-flex; gap: 4px; padding: 4px 0; }
+.ov-dots span {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--fg3);
+  animation: ov-dot-pulse 1.2s infinite ease-in-out;
+}
+.ov-dots span:nth-child(2) { animation-delay: 0.16s; }
+.ov-dots span:nth-child(3) { animation-delay: 0.32s; }
+
+/* HITL */
+.hitl-card {
+  position: relative;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(245,158,11,0.09), rgba(245,158,11,0.02));
+  border: 1px solid rgba(245,158,11,0.30);
+  overflow: hidden;
+  animation: ov-hitl-glow 2.6s ease-in-out infinite, ov-pop-in 320ms ease-out;
+}
+.hitl-bar {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: linear-gradient(180deg, #f59e0b, #d97706);
+  box-shadow: 0 0 8px rgba(245,158,11,0.4);
+}
+.hitl-inner { padding: 14px 16px 14px 18px; }
+.hitl-head {
+  display: flex; align-items: center;
+  margin-bottom: 8px; flex-wrap: wrap; gap: 8px;
+}
+.hitl-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  background: rgba(245,158,11,0.14);
+  color: var(--warn);
+  font-size: 11.5px; font-weight: 510;
+  border: 1px solid rgba(245,158,11,0.3);
+}
+.hitl-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--warn);
+  animation: ov-hitl-dot 1.6s ease-out infinite;
+}
+.hitl-tool {
+  font-family: var(--font-mono); font-size: 11.5px;
+  color: var(--fg2);
+  padding: 1px 6px; border-radius: 3px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-subtle);
+}
+.hitl-kbd { margin-left: auto; font-size: 10.5px; color: var(--fg4); font-family: var(--font-mono); }
+.hitl-body {
+  margin: 6px 0 12px;
+  font-size: 13.5px; color: var(--fg2); line-height: 1.55; letter-spacing: -0.165px;
+}
+.hitl-actions { display: flex; gap: 8px; align-items: center; }
+.hitl-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 6px;
+  font-size: 12.5px; font-weight: 510;
+  border: 1px solid transparent;
+  cursor: pointer; line-height: 1; font-family: inherit;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease,
+              transform 120ms ease, box-shadow 120ms ease;
+}
+.hitl-btn.primary {
+  background: var(--accent); color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+.hitl-btn.primary.hover {
+  background: var(--accent-hover);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12), 0 0 0 3px rgba(113,112,255,0.24);
+}
+.hitl-btn.primary.pulse {
+  transform: translateY(0.5px) scale(0.97);
+  background: var(--accent-hover);
+}
+.hitl-btn.ghost { background: transparent; color: var(--fg2); border-color: var(--border-standard); }
+.hitl-btn.danger { background: transparent; color: var(--fg2); border-color: var(--border-standard); }
+.kbd-inline {
+  font-family: var(--font-mono); font-size: 10px;
+  padding: 1px 4px; border-radius: 3px;
+  background: rgba(0,0,0,0.25);
+  color: rgba(255,255,255,0.6);
+  margin-left: 2px;
+}
+.hitl-done-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; font-size: 12px; border-radius: 999px;
+  background: rgba(16,185,129,0.08);
+  border: 1px solid rgba(16,185,129,0.25);
+  color: var(--success);
+  font-weight: 510; width: fit-content;
+  animation: ov-pop-in 280ms ease-out;
+}
+.hitl-check-ic { display: inline-flex; }
+
+/* Composer */
+.ov-composer-wrap { padding: 14px 28px 22px; flex: none; }
+.ov-composer {
+  max-width: 760px; margin: 0 auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-standard);
+  border-radius: 12px;
+  transition: border-color 220ms ease, box-shadow 220ms ease;
+}
+.ov-composer.focused {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(113,112,255,0.14);
+}
+.ov-composer-row { display: flex; align-items: center; gap: 4px; padding: 8px 8px 8px 12px; }
+.ov-comp-btn {
+  background: transparent; border: none;
+  width: 30px; height: 30px; border-radius: 6px;
+  color: var(--fg3); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+}
+.ov-textarea {
+  flex: 1; min-height: 26px; padding: 4px;
+  color: var(--fg1);
+  font-family: inherit; font-feature-settings: "cv01","ss03";
+  font-size: 14px; letter-spacing: -0.165px; line-height: 1.5;
+  display: flex; align-items: center;
+}
+.ov-placeholder { color: var(--fg4); }
+.ov-typed-text { color: var(--fg1); white-space: pre; }
+.ov-caret {
+  display: inline-block;
+  width: 1.5px; height: 15px;
+  background: var(--accent-violet);
+  margin-left: 1px; vertical-align: middle; opacity: 0;
+}
+.ov-caret.blink { animation: ov-caret-blink 1s step-end infinite; }
+
+.ov-comp-send {
+  width: 30px; height: 30px; border-radius: 6px;
+  border: none; cursor: pointer;
+  background: rgba(255,255,255,0.04); color: var(--fg4);
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  transition: background 150ms ease, color 150ms ease, transform 100ms ease, box-shadow 150ms ease;
+}
+.ov-comp-send.active { background: var(--accent); color: #fff; box-shadow: 0 2px 10px rgba(113,112,255,0.35); }
+.ov-comp-send.hover { background: var(--accent-hover); }
+.ov-comp-send.pressed { transform: scale(0.90); background: var(--accent-hover); }
+
+.ov-composer-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 12px 10px;
+  border-top: 1px solid var(--border-subtle);
+  gap: 12px;
+}
+.ov-comp-chips { display: flex; gap: 6px; }
+.ov-comp-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 4px;
+  font-size: 10.5px; color: var(--fg4);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+.ov-comp-hint {
+  font-size: 10.5px; color: var(--fg4);
+  display: flex; gap: 8px; align-items: center; white-space: nowrap;
+}
+.kbd-mini {
+  font-family: var(--font-mono); font-size: 9.5px;
+  padding: 1px 4px; border-radius: 3px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-subtle);
+  margin-right: 3px;
+}
+
+/* Todo drawer */
+.ov-todo {
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border-subtle);
+  display: flex; flex-direction: column; min-height: 0;
+}
+.ov-todo-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px 12px 18px;
+  border-bottom: 1px solid var(--border-subtle); flex: none;
+}
+.ov-todo-head-l { display: flex; align-items: baseline; gap: 10px; }
+.ov-todo-title { font-size: 13px; font-weight: 510; color: var(--fg1); }
+.ov-todo-count { font-family: var(--font-mono); font-size: 11px; color: var(--fg4); }
+.ov-todo-progress { height: 2px; background: rgba(255,255,255,0.04);
+  position: relative; overflow: hidden; flex: none; }
+.ov-todo-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-violet));
+  transition: width 600ms ease;
+  box-shadow: 0 0 8px rgba(113,112,255,0.5);
+}
+.ov-todo-list {
+  flex: 1; overflow: hidden; min-height: 0;
+  padding: 12px 0 16px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.ov-todo-empty {
+  padding: 36px 18px;
+  color: var(--fg4);
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+}
+.ov-todo-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 8px 18px;
+  font-size: 13px; line-height: 1.5;
+  color: var(--fg2);
+  transition: color 240ms ease;
+}
+.ov-todo-item.completed { color: var(--fg4); }
+.ov-todo-item.completed .ov-todo-text {
+  text-decoration: line-through;
+  text-decoration-color: rgba(255,255,255,0.2);
+}
+.ov-todo-item.in_progress { color: var(--fg1); }
+.ov-todo-mark {
+  flex: none; margin-top: 2px;
+  width: 14px; height: 14px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ov-todo-circle { width: 14px; height: 14px; border-radius: 50%;
+  border: 1.5px solid var(--border-focus); }
+.ov-todo-check {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--accent-violet);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
+}
+.ov-todo-text { flex: 1; min-width: 0; }
+
+/* ─── Stage viewport + controls ─── */
+.stage-root {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background:
+    radial-gradient(ellipse at 50% 35%, #111315 0%, #050607 70%),
+    #050607;
+  padding: 28px 28px 82px;
+}
+.stage-frame {
+  position: relative;
+  width: 1440px; height: 900px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow:
+    0 40px 120px rgba(0,0,0,0.75),
+    0 0 0 1px rgba(255,255,255,0.05),
+    0 0 60px rgba(113,112,255,0.04);
+  background: #08090a;
+}
+.stage-inner { position: absolute; inset: 0; }
+.stage-vignette {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.35) 100%);
+  z-index: 50;
+}
+
+.sv-controls {
+  position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 14px 8px 10px;
+  background: rgba(14,15,17,0.85);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 999px;
+  color: var(--fg2);
+  font-size: 12px;
+  z-index: 200;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+.sv-btn {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.04);
+  color: var(--fg1); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 120ms ease;
+  font-family: inherit; font-size: 11px;
+}
+.sv-btn:hover { background: rgba(255,255,255,0.10); }
+.sv-track {
+  width: 380px; height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 999px; cursor: pointer;
+  position: relative;
+}
+.sv-fill {
+  position: absolute; top: 0; left: 0; height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-violet));
+  box-shadow: 0 0 8px rgba(113,112,255,0.6);
+}
+.sv-marker {
+  position: absolute; top: -3px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(113,112,255,0.6);
+  transform: translateX(-50%);
+}
+.sv-time {
+  font-family: var(--font-mono); font-size: 11px; color: var(--fg3);
+  min-width: 80px; text-align: center;
+}
+.sv-hint {
+  font-size: 10.5px; color: var(--fg4);
+  margin-left: 4px; padding-left: 10px;
+  border-left: 1px solid rgba(255,255,255,0.06);
+}
+.sv-hint kbd {
+  font-family: var(--font-mono); font-size: 9px;
+  padding: 1px 4px; border-radius: 3px;
+  background: rgba(255,255,255,0.06);
+  margin: 0 2px;
+}
+
+/* Debug grid */
+.dbg-grid {
+  position: absolute; inset: 0;
+  pointer-events: none; z-index: 500;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px);
+  background-size: 100px 100px;
+  font-family: var(--font-mono); font-size: 9px;
+  color: rgba(255,255,255,0.45);
+}
+.dbg-grid-ax {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(113,112,255,0.25) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(113,112,255,0.25) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+.dbg-center {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 20px; height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 1px solid rgba(245,158,11,0.9);
+  border-radius: 50%;
+}
+.dbg-label {
+  position: absolute;
+  padding: 1px 3px;
+  background: rgba(0,0,0,0.35);
+  border-radius: 2px;
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
+
+// ── Minimal runtime for timeline ──────────────────────────────────────────
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, p) => a + (b - a) * p;
+const Easing = {
+  easeInOutCubic: t => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2,
+  easeOutCubic:   t => 1 - Math.pow(1 - t, 3),
+  easeInCubic:    t => t*t*t,
+  easeOutQuart:   t => 1 - Math.pow(1 - t, 4),   // decisive push — sharp start
+};
+
+const TimeCtx = React.createContext(0);
+const useTime = () => React.useContext(TimeCtx);
+
+// ═════════════════════════════════════════════════
+// SCENE LOGIC — storyboard driven by time (seconds)
+// ═════════════════════════════════════════════════
+const DURATION = 15;
+const TYPE_TEXT = '帮我订深圳技术大学旁边的酒店';
+
+// Timeline — all values in seconds. Keys document phases; actual gating
+// happens inline below (stateAt / cameraAt / cursorAt) for clarity.
+const T = {
+  // Phase 1 — 提问
+  zoomIn:          [0.4, 1.6],
+  typing:          [1.6, 3.9],     // 2.3s, humanized mid-sentence pause
+  sendClick:       [3.9, 4.2],
+  zoomOut:         [4.2, 5.0],
+
+  // Phase 2 — Agent 规划 + 工具执行
+  userBubble:      [4.2, 4.2],
+  aiThinking:      [4.4, 5.2],
+  aiGreeting:      [5.2, 5.2],
+  todo1Write:      [5.6, 5.6],
+  drawerPopulate:  [5.8, 5.8],
+  toolMap:         [6.0, 7.2],
+  todo2Write:      [7.4, 7.4],
+  resText:         [7.7, 7.7],
+  bookHotelCall:   [8.6, 8.6],
+
+  // Phase 3 — 人在回路 (B: reactive camera + anticipation + confirmation)
+  hitlAppear:      [9.3, 9.3],     // card enters while camera HOLDS at overview
+  zoomToHitl:      [9.5, 10.3],    // 0.2s delay then decisive push
+  cursorApproach:  [10.3, 11.4],   // 1.1s purposeful travel
+  approveHover:    [11.4, 11.9],   // 0.5s hover glow — anticipation
+  clickApprove:    [11.9, 12.05],  // decisive 150ms tap
+  hitlApproved:    [12.1, 12.1],
+  hitlConfirmHold: [12.1, 12.6],   // 0.5s on chip — "it registers"
+  zoomOutFromHitl: [12.6, 13.2],
+
+  // Phase 4 — 完成
+  bookHotelDone:   [12.7, 12.7],
+  todo3Write:      [13.0, 13.0],
+  finalResult:     [13.3, 13.3],
+  todoAllDone:     [13.3, 13.3],
+  resultPushIn:    [13.5, 14.7],   // subtle s=1 → 1.07 settle on success
+  endHold:         [14.7, 15.0],
+};
+
+// ── Typing — humanized cadence with one mid-sentence breath ──
+// "帮我订深圳技术大学" (9) → hold 0.25s → "旁边的酒店" (+5 → 14)
+function typedAt(localT) {
+  const schedule = [
+    { n: 9,  at: 1.05 },
+    { n: 9,  at: 1.30 },    // hesitation — still 9 chars
+    { n: 14, at: 2.05 },
+  ];
+  let prev = { n: 0, at: 0 };
+  for (const seg of schedule) {
+    if (localT < seg.at) {
+      const p = (localT - prev.at) / (seg.at - prev.at);
+      return TYPE_TEXT.slice(0, Math.floor(prev.n + (seg.n - prev.n) * p));
+    }
+    prev = seg;
+  }
+  return TYPE_TEXT;
+}
+
+// ── Camera ──
+// screen_pt = (720,450) + (p - (720,450))·scale + (tx, ty)
+// Poses:
+//   COMPOSER: s=1.5,  tx=42, ty=-470 — composer lands lower-middle
+//   HITL:     s=1.52, tx=18, ty=-215 — HITL card roughly centered
+//   RESULT:   s=1.07, tx=0,  ty=-25  — subtle settle on success
+function cameraAt(t) {
+  let scale = 1, tx = 0, ty = 0;
+  const easeInOut = Easing.easeInOutCubic;
+  const easeOut   = Easing.easeOutQuart;    // decisive HITL push
+  const easeSoft  = Easing.easeInOutCubic;  // gentler final push-in
+
+  if (t < 0.4) {
+    // cold open
+  } else if (t < 1.6) {
+    const p = easeInOut((t - 0.4) / 1.2);
+    scale = lerp(1, 1.5, p);
+    tx = lerp(0, 42, p);
+    ty = lerp(0, -470, p);
+  } else if (t < 3.9) {
+    scale = 1.5; tx = 42; ty = -470;
+  } else if (t < 4.2) {
+    // micro settle on click
+    const p = easeInOut((t - 3.9) / 0.3);
+    scale = lerp(1.5, 1.46, p);
+    tx = lerp(42, 36, p);
+    ty = lerp(-470, -440, p);
+  } else if (t < 5.0) {
+    const p = easeInOut((t - 4.2) / 0.8);
+    scale = lerp(1.46, 1, p);
+    tx = lerp(36, 0, p);
+    ty = lerp(-440, 0, p);
+  } else if (t < 9.5) {
+    // Overview through AI work. HITL appears at 9.3 — camera intentionally
+    // HOLDS for 0.2s so the product moment registers before we react.
+  } else if (t < 10.3) {
+    const p = easeOut((t - 9.5) / 0.8);     // decisive reactive push
+    scale = lerp(1, 1.52, p);
+    tx = lerp(0, 18, p);
+    ty = lerp(0, -215, p);
+  } else if (t < 12.6) {
+    // Hold on HITL through hover + click + 0.5s confirmation breath on chip
+    scale = 1.52; tx = 18; ty = -215;
+  } else if (t < 13.2) {
+    const p = easeInOut((t - 12.6) / 0.6);
+    scale = lerp(1.52, 1, p);
+    tx = lerp(18, 0, p);
+    ty = lerp(-215, 0, p);
+  } else if (t < 13.5) {
+    // brief overview beat
+  } else if (t < 14.7) {
+    const p = easeSoft((t - 13.5) / 1.2);   // slow settle on result
+    scale = lerp(1, 1.07, p);
+    ty = lerp(0, -25, p);
+  } else {
+    scale = 1.07; ty = -25;
+  }
+
+  return { scale, tx, ty };
+}
+
+// ── Cursor ──
+// Send button: (1046, 832)   Approve button: (409, 587)
+function cursorAt(t) {
+  if (t < 3.0) return { x: null, y: null, clicking: false };
+
+  // Phase 1 — SEND
+  if (t < 3.9) {
+    const p = Easing.easeOutCubic(clamp((t - 3.0) / 0.9, 0, 1));
+    return { x: lerp(1260, 1046, p), y: lerp(880, 832, p), clicking: false };
+  }
+  if (t < 4.2) {
+    return { x: 1046, y: 832, clicking: t >= 3.95 && t < 4.1 };
+  }
+  if (t < 4.7) {
+    const p = Easing.easeInCubic(clamp((t - 4.2) / 0.5, 0, 1));
+    return { x: lerp(1046, 1440, p), y: lerp(832, 940, p), clicking: false };
+  }
+  if (t < 10.3) return { x: null, y: null, clicking: false };
+
+  // Phase 2 — APPROVE
+  if (t < 11.4) {
+    const p = Easing.easeOutCubic(clamp((t - 10.3) / 1.1, 0, 1));
+    return { x: lerp(900, 409, p), y: lerp(780, 587, p), clicking: false };
+  }
+  if (t < 12.1) {
+    return { x: 409, y: 587, clicking: t >= 11.9 && t < 12.05 };
+  }
+  if (t < 12.8) {
+    const p = Easing.easeInCubic(clamp((t - 12.1) / 0.7, 0, 1));
+    return { x: lerp(409, 1440, p), y: lerp(587, 940, p), clicking: false };
+  }
+  return { x: null, y: null, clicking: false };
+}
+
+// ── State derived from time ──
+function stateAt(t) {
+  const typedText = (t >= T.typing[0] && t < T.sendClick[1])
+    ? typedAt(t - T.typing[0]) : '';
+
+  const composerFocused = t >= 0.8 && t < 4.2;
+  const sendHover       = t >= 3.6 && t < 3.95;
+  const sendPressed     = t >= 3.95 && t < 4.1;
+
+  const messages = [];
+  if (t >= 4.2) messages.push({ role: 'user', text: TYPE_TEXT });
+  if (t >= 4.2) {
+    const asst = { role: 'assistant', segments: [], streaming: false };
+    if (t < 5.2) {
+      asst.streaming = true;
+    } else {
+      asst.segments.push({ type: 'text', content: '我来帮你预定深圳技术大学旁边的酒店。先规划一下任务：' });
+    }
+    if (t >= 5.6) asst.segments.push({ type: 'tool', code: 'write_todos', label: 'write_todos', status: 'done' });
+    if (t >= 6.0) asst.segments.push({
+      type: 'tool', code: 'researcher', label: '高德地图分析 Agent',
+      status: t < 7.2 ? 'calling' : 'done', agentTag: 'researcher'
+    });
+    if (t >= 7.4) asst.segments.push({ type: 'tool', code: 'write_todos', label: 'write_todos', status: 'done' });
+    if (t >= 7.7) asst.segments.push({ type: 'research' });
+    if (t >= 8.6) {
+      const st = t < 12.7 ? 'calling' : 'done';
+      asst.segments.push({ type: 'tool', code: 'book_hotel', label: '预订酒店', status: st });
+    }
+    if (t >= 9.3 && t < 12.1) {
+      asst.segments.push({ type: 'hitl', status: 'pending' });
+    } else if (t >= 12.1) {
+      asst.segments.push({ type: 'hitl', status: 'approved' });
+    }
+    if (t >= 13.0) asst.segments.push({ type: 'tool', code: 'write_todos', label: 'write_todos', status: 'done' });
+    if (t >= 13.3) asst.segments.push({ type: 'result' });
+    messages.push(asst);
+  }
+
+  // Drawer: empty until first write_todos pill settles at 5.8s (just after
+  // the pill appears at 5.6 — Pill → Drawer sequencing feels natural).
+  const todoState = t < 5.8
+    ? { total: 0, done: 0, items: [] }
+    : {
+        total: 3, done: 0,
+        items: [
+          { content: '调研深圳技术大学位置及周边酒店信息', status: 'pending' },
+          { content: '根据调研结果选择合适的酒店', status: 'pending' },
+          { content: '预定选定的酒店', status: 'pending' },
+        ],
+      };
+  if (t >= 5.8 && t < 7.4) {
+    todoState.items[0].status = 'in_progress';
+  } else if (t >= 7.4 && t < 7.7) {
+    todoState.items[0].status = 'completed';
+    todoState.items[1].status = 'in_progress';
+    todoState.done = 1;
+  } else if (t >= 7.7 && t < 13.0) {
+    todoState.items[0].status = 'completed';
+    todoState.items[1].status = 'completed';
+    todoState.items[2].status = 'in_progress';
+    todoState.done = 2;
+  } else if (t >= 13.0) {
+    todoState.items[0].status = 'completed';
+    todoState.items[1].status = 'completed';
+    todoState.items[2].status = 'completed';
+    todoState.done = 3;
+  }
+
+  const hitlApproveHover  = t >= 11.4 && t < 12.0;
+  const approveClickPulse = t >= 11.9 && t < 12.1;
+
+  return { typedText, composerFocused, sendHover, sendPressed,
+           messages, todoState, hitlApproveHover, approveClickPulse };
+}
+
+// ═════════════════════════════════════════════════
+// UI COMPONENTS
+// ═════════════════════════════════════════════════
+function Cursor({ x, y, clicking }) {
+  return (
+    <div style={{
+      position: 'absolute', left: x, top: y,
+      pointerEvents: 'none', zIndex: 100,
+      filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.55))',
+    }}>
+      <svg width="22" height="26" viewBox="0 0 22 26" fill="none">
+        <path d="M1 1.5L1 20.5L6.5 16.5L10 23L13 21.5L9.5 15L15.5 14.5L1 1.5Z"
+          fill="#fff" stroke="#111" strokeWidth="1.2" strokeLinejoin="round"/>
+      </svg>
+      {clicking && (
+        <div style={{
+          position: 'absolute', left: 8, top: 12,
+          width: 32, height: 32, marginLeft: -16, marginTop: -16,
+          borderRadius: '50%',
+          border: '2px solid rgba(113,112,255,0.85)',
+          animation: 'ripple 420ms ease-out',
+        }} />
+      )}
+    </div>
+  );
+}
+
+function ToolChip({ label, code, status, agentTag }) {
+  const icon = status === 'calling' ? (
+    <svg viewBox="0 0 16 16" width="10" height="10" className="spin-ico">
+      <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor"
+              strokeWidth="1.5" strokeDasharray="9 30" strokeLinecap="round"/>
+    </svg>
+  ) : status === 'done' ? (
+    <svg viewBox="0 0 16 16" width="10" height="10">
+      <path d="M3.5 8l3 3 6-6" stroke="currentColor" strokeWidth="2"
+            fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  ) : null;
+  return (
+    <div className={`tool-chip ${status}`}>
+      <span className="tool-chip-ic">{icon}</span>
+      <span className="tool-chip-label">{label}</span>
+      {agentTag && <span className="tool-chip-agent">{agentTag}</span>}
+      <span className="tool-chip-sep" />
+      <span className="tool-chip-code">{code}</span>
+    </div>
+  );
+}
+
+function HitlCard({ status, hovered, clickPulse }) {
+  if (status === 'approved') {
+    return (
+      <div className="hitl-done-chip">
+        <span className="hitl-check-ic">
+          <svg width="10" height="10" viewBox="0 0 16 16">
+            <path d="M3.5 8l3 3 6-6" stroke="currentColor" strokeWidth="2"
+                  fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </span>
+        已批准 · 预订酒店
+      </div>
+    );
+  }
+  return (
+    <div className="hitl-card">
+      <div className="hitl-bar" />
+      <div className="hitl-inner">
+        <div className="hitl-head">
+          <span className="hitl-badge"><span className="hitl-dot" />需要审批</span>
+          <span className="hitl-tool">book_hotel</span>
+          <span className="hitl-kbd">Y / N / F</span>
+        </div>
+        <p className="hitl-body">Agent 想要预订酒店：深圳技术大学1034酒店</p>
+        <div className="hitl-actions">
+          <button className={`hitl-btn primary ${hovered ? 'hover' : ''} ${clickPulse ? 'pulse' : ''}`}>
+            <svg width="12" height="12" viewBox="0 0 16 16">
+              <path d="M3.5 8l3 3 6-6" stroke="currentColor" strokeWidth="2"
+                    fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            批准 <span className="kbd-inline">Y</span>
+          </button>
+          <button className="hitl-btn ghost">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+              <path d="M2 3h12v8H8l-3 3v-3H2V3z" stroke="currentColor"
+                    strokeWidth="1.5" strokeLinejoin="round"/>
+            </svg>
+            反馈 <span className="kbd-inline">F</span>
+          </button>
+          <button className="hitl-btn danger">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor"
+                    strokeWidth="1.75" strokeLinecap="round"/>
+            </svg>
+            拒绝 <span className="kbd-inline">N</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FullUI({ typedText, composerFocused, sendHover, sendPressed,
+                  messages, todoState, hitlApproveHover, approveClickPulse }) {
+  const msgRef = useRef(null);
+  useEffect(() => {
+    const el = msgRef.current;
+    if (!el) return;
+    // Smooth follow: only when content actually exceeds viewport.
+    if (el.scrollHeight - el.clientHeight > 4) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [messages]);
+
+  return (
+    <div className="ov-app">
+      {/* SIDEBAR */}
+      <aside className="ov-sb">
+        <div className="ov-sb-header">
+          <div className="ov-sb-agent">
+            <div className="ov-sb-agent-av">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M8 1.5L9.8 6.2L14.5 8L9.8 9.8L8 14.5L6.2 9.8L1.5 8L6.2 6.2L8 1.5Z" fill="currentColor"/>
+              </svg>
+            </div>
+            <div className="ov-sb-agent-meta">
+              <div className="ov-sb-agent-name">ReAct Agent</div>
+              <div className="ov-sb-agent-status"><span className="pulse-green" />在线 · glm-5</div>
+            </div>
+          </div>
+        </div>
+        <div className="ov-sb-section">
+          <button className="ov-sb-new">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+              <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            <span>新建会话</span>
+          </button>
+          <div className="ov-sb-search">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+              <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            <input placeholder="搜索会话与消息..." disabled />
+          </div>
+        </div>
+        <div className="ov-sb-scroll">
+          <div className="ov-sb-group">
+            <div className="ov-sb-head"><span>今天</span><span className="ov-sb-head-count">1</span></div>
+            <div className="ov-sess active"><span className="ov-sess-rule" /><span>新会话</span></div>
+          </div>
+        </div>
+        <div className="ov-sb-tools">
+          <div className="ov-sb-tools-head"><span>🔌 已连接工具</span><span className="ov-sb-tools-count">22</span></div>
+          <div className="ov-sb-tools-list">
+            <div className="ov-tool-row"><span className="ov-tool-dot warn" /><span>book_hotel</span><span className="ov-tool-tag">需审批</span></div>
+            <div className="ov-tool-row"><span className="ov-tool-dot" /><span>multiply</span></div>
+            <div className="ov-tool-row"><span className="ov-tool-dot" /><span>query_knowledge_base</span></div>
+            <div className="ov-tool-row"><span className="ov-tool-dot" /><span>maps_direction_bicycling</span></div>
+            <div className="ov-tool-row"><span className="ov-tool-dot" /><span>maps_direction_driving</span></div>
+            <div className="ov-tool-row"><span className="ov-tool-dot" /><span>maps_direction_transit_integra…</span></div>
+          </div>
+        </div>
+        <div className="ov-sb-foot">
+          <div className="ov-sb-avatar">W</div>
+          <div className="ov-sb-user-meta">
+            <div className="ov-sb-name">Wenhua</div>
+            <div className="ov-sb-plan">Pro Plan</div>
+          </div>
+          <button className="ov-sb-icon">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M8 1.5v2M8 12.5v2M14.5 8h-2M3.5 8h-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </aside>
+
+      {/* MAIN */}
+      <section className="ov-main">
+        <header className="ov-main-head">
+          <div className="ov-main-head-l">
+            <span className="ov-main-title">新会话</span>
+            <span className="ov-main-meta">{messages.filter(m => m.role).length} 条消息 · 今天 19:34</span>
+          </div>
+          <div className="ov-main-head-r">
+            <button className="ov-head-btn active">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                <path d="M2 4h12M2 8h12M2 12h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <circle cx="14" cy="12" r="1" fill="currentColor"/>
+              </svg>
+            </button>
+            <button className="ov-head-btn">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                <circle cx="4" cy="8" r="2" stroke="currentColor" strokeWidth="1.5"/>
+                <circle cx="12" cy="4" r="2" stroke="currentColor" strokeWidth="1.5"/>
+                <circle cx="12" cy="12" r="2" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M5.8 7L10.2 5M5.8 9L10.2 11" stroke="currentColor" strokeWidth="1.5"/>
+              </svg>
+            </button>
+            <button className="ov-head-btn">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                <circle cx="3" cy="8" r="1" fill="currentColor"/>
+                <circle cx="8" cy="8" r="1" fill="currentColor"/>
+                <circle cx="13" cy="8" r="1" fill="currentColor"/>
+              </svg>
+            </button>
+          </div>
+        </header>
+
+        <div className="ov-messages" ref={msgRef}>
+          <div className="ov-messages-inner">
+            {messages.length === 0 && (
+              <div className="ov-empty">
+                <div className="ov-empty-mark">
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+                    <path d="M8 1.5L9.8 6.2L14.5 8L9.8 9.8L8 14.5L6.2 9.8L1.5 8L6.2 6.2L8 1.5Z" fill="currentColor"/>
+                  </svg>
+                </div>
+                <div className="ov-empty-text">你好，有什么可以帮你的？</div>
+              </div>
+            )}
+            {messages.map((m, i) => m.role === 'user' ? (
+              <div key={i} className="ov-u-row">
+                <div className="ov-u-bub">{m.text}</div>
+              </div>
+            ) : (
+              <div key={i} className="ov-a-row">
+                <div className="ov-a-gutter">
+                  <div className="ov-a-avatar">
+                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+                      <path d="M8 1.5L9.8 6.2L14.5 8L9.8 9.8L8 14.5L6.2 9.8L1.5 8L6.2 6.2L8 1.5Z" fill="currentColor"/>
+                    </svg>
+                  </div>
+                </div>
+                <div className="ov-a-bub">
+                  {m.segments.map((s, j) => {
+                    if (s.type === 'text') return <p key={j} className="ov-a-p">{s.content}</p>;
+                    if (s.type === 'tool') return <div key={j} className="ov-tool-wrap"><ToolChip {...s} /></div>;
+                    if (s.type === 'hitl') return <HitlCard key={j} status={s.status}
+                                                  hovered={hitlApproveHover} clickPulse={approveClickPulse} />;
+                    if (s.type === 'research') return (
+                      <div key={j} className="ov-research">
+                        <p className="ov-a-p">根据调研结果，我为你找到了 <strong>深圳技术大学</strong> 周边的多家酒店。综合考虑距离、评分和便利性，我推荐<strong>深圳技术大学1034酒店</strong>：</p>
+                        <ul className="ov-a-ul">
+                          <li><span className="ov-bullet-ic">📍</span> 距离学校仅864米（步行约13分钟）</li>
+                          <li><span className="ov-bullet-ic">⭐</span> 评分4.7分</li>
+                          <li><span className="ov-bullet-ic">🎓</span> 位于校内国际学术交流中心，非常方便</li>
+                        </ul>
+                        <p className="ov-a-p">现在为你预定这家酒店：</p>
+                      </div>
+                    );
+                    if (s.type === 'result') return (
+                      <div key={j} className="ov-result">
+                        <p className="ov-a-p"><span className="ov-result-ok">✅</span> <strong>预定成功!</strong></p>
+                        <p className="ov-a-p">已为你预定 <strong>深圳技术大学1034酒店</strong>。</p>
+                        <p className="ov-a-p"><strong>酒店信息：</strong></p>
+                        <ul className="ov-a-ul">
+                          <li><span className="ov-bullet-ic">🏨</span> 酒店名称：深圳技术大学1034酒店</li>
+                          <li><span className="ov-bullet-ic">📍</span> 地址：兰田路3002号技术大学国际学术交流中心</li>
+                          <li><span className="ov-bullet-ic">📏</span> 距离学校：864米（步行约13分钟）</li>
+                          <li><span className="ov-bullet-ic">⭐</span> 评分：4.7分</li>
+                          <li><span className="ov-bullet-ic">🎓</span> 位置优势：位于校内国际学术交流中心，距离最近，非常适合学术交流访问</li>
+                        </ul>
+                        <p className="ov-a-p">如果你需要调整预定或了解其他酒店选项，随时告诉我！</p>
+                      </div>
+                    );
+                    return null;
+                  })}
+                  {m.streaming && <div className="ov-dots"><span /><span /><span /></div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="ov-composer-wrap">
+          <div className={`ov-composer ${composerFocused ? 'focused' : ''}`}>
+            <div className="ov-composer-row">
+              <button className="ov-comp-btn" disabled>
+                {/* lucide Paperclip — matches chat-input.tsx */}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" strokeWidth="2"
+                     strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                </svg>
+              </button>
+              <div className="ov-textarea">
+                {typedText ? (
+                  <span className="ov-typed-text">{typedText}<span className={`ov-caret ${composerFocused ? 'blink' : ''}`}/></span>
+                ) : (
+                  <span className="ov-placeholder">回复 Agent，或输入 / 查看命令...
+                    {composerFocused && <span className="ov-caret blink" />}
+                  </span>
+                )}
+              </div>
+              <button className={`ov-comp-send ${typedText ? 'active' : ''} ${sendHover && typedText ? 'hover' : ''} ${sendPressed ? 'pressed' : ''}`}>
+                {/* lucide ArrowUp — matches chat-input.tsx */}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" strokeWidth="2"
+                     strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 19V5"/>
+                  <path d="m5 12 7-7 7 7"/>
+                </svg>
+              </button>
+            </div>
+            <div className="ov-composer-foot">
+              <div className="ov-comp-chips">
+                <span className="ov-comp-chip">
+                  {/* lucide Wrench */}
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" strokeWidth="2.5"
+                       strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                  </svg>
+                  <span>工具 22</span>
+                </span>
+                <span className="ov-comp-chip">
+                  {/* lucide ShieldCheck */}
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" strokeWidth="2.5"
+                       strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+                    <path d="m9 12 2 2 4-4"/>
+                  </svg>
+                  <span>HITL 开启</span>
+                </span>
+              </div>
+              <div className="ov-comp-hint">
+                <span className="kbd-mini">Enter</span>发送
+                <span className="kbd-mini">⇧ Enter</span>换行
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* TODO DRAWER */}
+      <aside className="ov-todo">
+        <header className="ov-todo-head">
+          <div className="ov-todo-head-l">
+            <span className="ov-todo-title">任务计划</span>
+            <span className="ov-todo-count">{todoState.done} / {todoState.total}</span>
+          </div>
+          <button className="ov-head-btn">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </header>
+        <div className="ov-todo-progress">
+          <div className="ov-todo-progress-bar"
+               style={{ width: `${todoState.total ? (todoState.done/todoState.total)*100 : 0}%` }} />
+        </div>
+        <div className="ov-todo-list">
+          {todoState.items.length === 0 ? (
+            <div className="ov-todo-empty">Agent 尚未制定任务计划</div>
+          ) : todoState.items.map((t, i) => (
+            <div key={i} className={`ov-todo-item ${t.status}`}>
+              <span className="ov-todo-mark">
+                {t.status === 'pending' && <span className="ov-todo-circle" />}
+                {t.status === 'in_progress' && (
+                  <svg viewBox="0 0 16 16" width="14" height="14" className="spin-ico">
+                    <circle cx="8" cy="8" r="6.5" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />
+                    <path d="M 8 1.5 A 6.5 6.5 0 0 1 14.5 8" fill="none"
+                          stroke="var(--accent-violet)" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                )}
+                {t.status === 'completed' && (
+                  <span className="ov-todo-check">
+                    <svg width="10" height="10" viewBox="0 0 16 16">
+                      <path d="M3.5 8l3 3 6-6" stroke="currentColor" strokeWidth="2.5"
+                            fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </span>
+                )}
+              </span>
+              <span className="ov-todo-text">{t.content}</span>
+            </div>
+          ))}
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════
+// DEBUG GRID (toggle with G) — helps tune camera/cursor coords visually
+// ═════════════════════════════════════════════════
+function DebugGrid() {
+  const labels = [];
+  for (let x = 0; x <= 1440; x += 200) {
+    for (let y = 0; y <= 900; y += 200) {
+      labels.push(
+        <div key={`${x}-${y}`} className="dbg-label" style={{ left: x+3, top: y+3 }}>
+          {x},{y}
+        </div>
+      );
+    }
+  }
+  return (
+    <div className="dbg-grid">
+      <div className="dbg-grid-ax" />
+      <div className="dbg-center" />
+      {labels}
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════
+// SCENE with camera
+// ═════════════════════════════════════════════════
+function Scene({ showGrid }) {
+  const time = useTime();
+  const cam = cameraAt(time);
+  const cur = cursorAt(time);
+  const st  = stateAt(time);
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, background: 'var(--bg-deepest)', overflow: 'hidden' }}>
+      {/* UI wrapper — camera transform */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        transform: `translate(${cam.tx}px, ${cam.ty}px) scale(${cam.scale})`,
+        transformOrigin: 'center center',
+        willChange: 'transform',
+      }}>
+        <FullUI {...st} />
+      </div>
+      {/* Cursor — shares camera space so it sits on pixels of the UI */}
+      {cur.x != null && (
+        <div style={{
+          position: 'absolute', inset: 0,
+          transform: `translate(${cam.tx}px, ${cam.ty}px) scale(${cam.scale})`,
+          transformOrigin: 'center center',
+          pointerEvents: 'none',
+        }}>
+          <Cursor x={cur.x} y={cur.y} clicking={cur.clicking} />
+        </div>
+      )}
+      {/* Subtle vignette on top of UI */}
+      <div className="stage-vignette" />
+      {/* Debug grid — rendered in stage space (no camera), so always 1:1 */}
+      {showGrid && <DebugGrid />}
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════
+// STAGE — owns time, playback controls, responsive fit
+// ═════════════════════════════════════════════════
+function Stage({ width, height, duration, children }) {
+  const [time, setTime] = useState(0);
+  const [playing, setPlaying] = useState(true);
+  const [showGrid, setShowGrid] = useState(false);
+  const [fit, setFit] = useState(1);
+  const timeRef = useRef(0);
+  const playingRef = useRef(true);
+  const lastTickRef = useRef(performance.now());
+
+  timeRef.current = time;
+  playingRef.current = playing;
+
+  // rAF tick
+  useEffect(() => {
+    let raf;
+    const tick = now => {
+      const dt = Math.min(0.1, (now - lastTickRef.current) / 1000);
+      lastTickRef.current = now;
+      if (playingRef.current) {
+        const next = timeRef.current + dt;
+        setTime(next >= duration ? 0 : next);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [duration]);
+
+  // Responsive fit
+  useEffect(() => {
+    const onR = () => {
+      const pad = 82;
+      const sx = (window.innerWidth - 56) / width;
+      const sy = (window.innerHeight - pad - 56) / height;
+      setFit(Math.min(sx, sy, 1));
+    };
+    onR();
+    window.addEventListener('resize', onR);
+    return () => window.removeEventListener('resize', onR);
+  }, [width, height]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const onKey = e => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === ' ') { e.preventDefault(); setPlaying(p => !p); }
+      else if (e.key === 'r' || e.key === 'R') { setTime(0); setPlaying(true); }
+      else if (e.key === 'g' || e.key === 'G') setShowGrid(g => !g);
+      else if (e.key === '.') setPlaying(p => !p);
+      else if (e.key === '[') { setPlaying(false); setTime(t => clamp(t - 0.1, 0, duration - 0.01)); }
+      else if (e.key === ']') { setPlaying(false); setTime(t => clamp(t + 0.1, 0, duration - 0.01)); }
+      else if (e.key === '0') setTime(0);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [duration]);
+
+  const onSeek = e => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const p = clamp((e.clientX - r.left) / r.width, 0, 1);
+    setTime(p * duration);
+  };
+
+  return (
+    <TimeCtx.Provider value={time}>
+      <div className="stage-root">
+        <div className="stage-frame" style={{
+          transform: `translate(-50%, -50%) scale(${fit})`,
+          transformOrigin: 'center center',
+          position: 'absolute', left: '50%', top: 'calc(50% - 20px)',
+        }}>
+          <div className="stage-inner">
+            {React.cloneElement(children, { showGrid })}
+          </div>
+        </div>
+      </div>
+      <div className="sv-controls">
+        <button className="sv-btn" onClick={() => setPlaying(p => !p)} title="播放 / 暂停 (Space)">
+          {playing ? '⏸' : '▶'}
+        </button>
+        <button className="sv-btn" onClick={() => { setTime(0); setPlaying(true); }} title="重播 (R)">
+          ↻
+        </button>
+        <div className="sv-track" onClick={onSeek}>
+          <div className="sv-fill" style={{ width: `${(time/duration)*100}%` }} />
+          <div className="sv-marker" style={{ left: `${(time/duration)*100}%` }} />
+        </div>
+        <div className="sv-time">{time.toFixed(1)}s / {duration.toFixed(0)}s</div>
+        <div className="sv-hint">
+          <kbd>Space</kbd>⏯ <kbd>R</kbd>↻ <kbd>[ ]</kbd>±0.1s <kbd>G</kbd>栅格
+        </div>
+      </div>
+    </TimeCtx.Provider>
+  );
+}
+
+function VideoRoot() {
+  return (
+    <Stage width={1440} height={900} duration={DURATION}>
+      <Scene />
+    </Stage>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<VideoRoot />);
+</script>
+</body>
+</html>
