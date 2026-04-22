@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Next.js 前端
-status: discussing
-stopped_at: Phase 12 context gathered
-last_updated: "2026-04-22T09:55:00.000Z"
+status: 4 个灰区决策已敲定（D-01 EventSource+Last-Event-ID、D-02 hitl_resolved 事件、D-03 from_id=0 重放、D-04 顶栏 banner）；G-01 gap 已按路线 A 并入本 Phase
+stopped_at: Phase 12 context gathered — CONTEXT.md 完成
+last_updated: "2026-04-22T02:27:21.909Z"
 last_activity: 2026-04-22 Phase 12 context gathered — Resilience discuss-phase done
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 15
+  total_plans: 18
   completed_plans: 15
-  percent: 80
+  percent: 83
 ---
 
 # Project State
@@ -102,3 +102,5 @@ Resume file: `.planning/phases/12-resilience/12-CONTEXT.md`
 
 **Completed Phase:** 11 (todo-panel) — 5/5 plans — 2026-04-22
 **In Progress:** Phase 12 (resilience) — discuss-phase 完成，待 `/gsd-plan-phase 12`
+
+**Planned Phase:** 12 (Resilience) — 3 plans — 2026-04-22T02:27:21.904Z
