@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Next.js 前端
 status: executing
-stopped_at: Phase 12 context gathered — CONTEXT.md 完成
-last_updated: "2026-04-22T04:08:09.478Z"
+stopped_at: Phase 13 context gathered — CONTEXT.md 完成
+last_updated: "2026-04-22T12:00:00.000Z"
 last_activity: 2026-04-22
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 18
-  completed_plans: 16
-  percent: 89
+  completed_plans: 18
+  percent: 92
 ---
 
 # Project State
@@ -21,20 +21,20 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** 用户通过自然语言与 AI Agent 对话，Agent 自主调用工具完成任务，关键操作经人工审批后执行
-**Current focus:** Phase 12 — resilience
+**Current focus:** Phase 13 — RAG Source Panel + Observability
 
 ## Current Position
 
-Phase: 12 (resilience) — EXECUTING
-Plan: 3 of 3
-CONTEXT.md: `.planning/phases/12-resilience/12-CONTEXT.md`（2026-04-22）
-Plans: 0/? — 待 `/gsd-plan-phase 12`
-Status: Ready to execute
+Phase: 13 (RAG Source Panel + Observability) — CONTEXT GATHERED
+Plan: 0 of ?
+CONTEXT.md: `.planning/phases/13-rag-source-panel-observability/13-CONTEXT.md`（2026-04-22）
+Plans: 0/? — 待 `/gsd-plan-phase 13`
+Status: Ready to plan
 Last activity: 2026-04-22
 
-Progress: [████████░░] 80%
+Progress: [█████████░] 92%
 
-**Next phase:** `/gsd-plan-phase 12` 把 CONTEXT.md 的 D-01～D-15 拆成可执行 plan（建议 2-3 个 wave：后端 header+hitl_resolved / 前端 banner+resolve action / 人工 UAT）。
+**Next phase:** `/gsd-plan-phase 13` 把 CONTEXT.md 的 D-01～D-07 拆成可执行 plan（建议 4 个 wave：后端 middleware artifact+source event+observability logger / 前端 types+store+SSE listener / `<SourceCards>` 组件+MessageBubble 挂接 / `/messages` checkpoint 重建+E2E UAT）。
 
 ## Performance Metrics
 
@@ -86,6 +86,12 @@ Recent decisions affecting current work:
 - [Phase 12-D-02]: /resume 后 XADD `hitl_resolved` 事件（tool_name/call_id/decision/ts），前端 resolveLastPendingHitl 幂等收敛
 - [Phase 12-D-03]: RESIL-02 复用 from_id=0 全量重放，零新端点；依赖 D-02 的 resolved 信号闭环 G-01
 - [Phase 12-D-04]: 重连 UX 采用顶栏轻提示 banner（用户主动偏离 Recommended 的静默方案，强调可见性）
+- [Phase 13-D-01]: artifact 走新 SSE `source` 事件，不扩展 `tool:done`（避免污染 Phase 09 ToolPill 契约）
+- [Phase 13-D-02]: 前端新增 inline `SourcesSegment` 扩展 Segment union；不走 message.sources sidecar（复用 segments 契约，自然支持多次 KB 调用顺序）
+- [Phase 13-D-03]: 历史持久化走 `/api/sessions/{id}/messages` + LangGraph checkpoint 重建 `SourcesSegment`；SSE-replay-only 会违反 Phase 10/11/12 "会话切换保留上下文" 红线
+- [Phase 13-D-04]: KB_OK/KB_EMPTY/KB_ERROR 用同一 `<SourceCards>` 组件 variant 三态；不走 pill 变体、不让 agent text 自说（UI 层保一致性）
+- [Phase 13-D-05]: route/fallback 对用户静默，只走结构化日志；用户无 actionable、仅 owner 关心
+- [Phase 13-D-06]: observability sink = Python `logger.info` + `extra={}`；不新建 JSONL / Redis Stream
 
 ### Pending Todos
 
@@ -98,10 +104,10 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-22
-Stopped at: Phase 12 context gathered — CONTEXT.md 完成
-Resume file: `.planning/phases/12-resilience/12-CONTEXT.md`
+Stopped at: Phase 13 context gathered — CONTEXT.md 完成
+Resume file: `.planning/phases/13-rag-source-panel-observability/13-CONTEXT.md`
 
-**Completed Phase:** 11 (todo-panel) — 5/5 plans — 2026-04-22
-**In Progress:** Phase 12 (resilience) — discuss-phase 完成，待 `/gsd-plan-phase 12`
+**Completed Phase:** 12 (resilience) — 3/3 plans + UAT — 2026-04-22
+**In Progress:** Phase 13 (RAG Source Panel + Observability) — discuss-phase 完成，待 `/gsd-plan-phase 13`
 
 **Planned Phase:** 12 (Resilience) — 3 plans — 2026-04-22T02:27:21.904Z
