@@ -1,4 +1,6 @@
+"use client";
 import type { ReactNode } from "react";
+import { TodoToggleButton } from "@/components/todo/todo-toggle-button";
 
 type ChatAreaProps = {
   children: ReactNode;
@@ -7,6 +9,9 @@ type ChatAreaProps = {
 export function ChatArea({ children }: ChatAreaProps) {
   return (
     <section className="flex h-screen flex-col bg-[var(--color-bg-panel)]">
+      <header className="flex items-center justify-end px-4 py-2 border-b border-[var(--color-border-subtle)]">
+        <TodoToggleButton />
+      </header>
       {children}
     </section>
   );
