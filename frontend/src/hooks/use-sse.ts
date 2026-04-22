@@ -115,7 +115,7 @@ export function useSSE(taskId: string | null, sessionId: string): void {
     });
 
     eventSource.addEventListener("todo", (event) => {
-      let payload: { todos?: Todo[] };
+      let payload: { todos?: unknown };
       try {
         payload = JSON.parse((event as MessageEvent).data);
       } catch {
@@ -124,8 +124,17 @@ export function useSSE(taskId: string | null, sessionId: string): void {
       if (!Array.isArray(payload.todos)) {
         return;
       }
-      setTodos(payload.todos);
-      if (payload.todos.length > 0) {
+      const validTodos: Todo[] = payload.todos.filter(
+        (t: unknown): t is Todo =>
+          typeof t === "object" &&
+          t !== null &&
+          typeof (t as { content?: unknown }).content === "string" &&
+          ((t as { status?: unknown }).status === "pending" ||
+            (t as { status?: unknown }).status === "in_progress" ||
+            (t as { status?: unknown }).status === "completed"),
+      );
+      setTodos(validTodos);
+      if (validTodos.length > 0) {
         autoOpenDrawer(sessionId);
       }
     });

@@ -16,7 +16,7 @@ export function TodoList() {
   return (
     <div className="flex-1 overflow-y-auto py-2">
       {todos.map((t, i) => (
-        <TodoItem key={i} todo={t} />
+        <TodoItem key={`${i}-${t.content}`} todo={t} />
       ))}
     </div>
   );
