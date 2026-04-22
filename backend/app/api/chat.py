@@ -83,9 +83,11 @@ async def resume(
     command_data = build_decisions(
         request.response_type, request.args, request.action_requests or []
     )
-    await task_svc.start_resume(request.task_id, command_data)
-    # Phase 12 D-02 / D-06：向事件流写一帧 hitl_resolved，让前端 from_id=0 重放时
-    # 能把对应 pending HitlSegment 收敛为终态（=G-01 修复信号）。
+    # Phase 12 D-02 / D-06：先向事件流写一帧 hitl_resolved，再调度后台 resume
+    # 任务。顺序关键 —— 如果先 start_resume，它内部的 await（set_task_status /
+    # set_last_task_id）可能把控制权让给后台 agent 协程，让 token/tool/done 帧
+    # 抢在 hitl_resolved 之前 XADD，从而触发 G-01（replay 客户端看到 done 时
+    # 仍未收敛的 pending HitlSegment）。先 publish 保证 XADD 顺序与逻辑顺序一致。
     # 事件 payload 刻意最小化，不携带 edited_args（见 CONTEXT additional_constraints）。
     action_req = (request.action_requests or [{}])[0]
     await task_bus.publish_event(
@@ -98,6 +100,7 @@ async def resume(
             "ts": time.time(),
         },
     )
+    await task_svc.start_resume(request.task_id, command_data)
     # P-06: resume 路径也刷 last_updated
     await session_svc.touch(meta["session_id"], meta["user_id"])
 
