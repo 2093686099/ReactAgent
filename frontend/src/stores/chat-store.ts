@@ -304,7 +304,13 @@ export const useChatStore = create<ChatState>((set) => ({
 
   setStatus: (status) => set({ status }),
 
-  setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
+  // Gate repeat writes at the store level — use-sse.ts fires this on every
+  // SSE frame (token/tool/done/...), which would otherwise produce N redundant
+  // `set` calls per streamed message. Zustand's Object.is check short-circuits
+  // render, but subscribers still receive N notifications; short-circuit here
+  // so repeat calls are a true no-op.
+  setConnectionStatus: (connectionStatus) =>
+    set((s) => (s.connectionStatus === connectionStatus ? {} : { connectionStatus })),
 
   setCurrentTaskId: (taskId) => set({ currentTaskId: taskId }),
 
