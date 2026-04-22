@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     tencent_api_key: str = ""
     amap_maps_api_key: str = ""
 
+    # MySQL（data_analyst 子 Agent 使用，未配置则禁用 SQL 工具）
+    mysql_uri: str = ""
+
     # 单用户默认标识（未来加登录时从 JWT 注入真实 user_id）
     default_user_id: str = "default"
 

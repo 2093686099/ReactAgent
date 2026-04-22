@@ -23,6 +23,9 @@ _EXTERNAL_MODS = [
     "langchain_core", "langchain_core.runnables", "langchain_core.tools",
     "langchain_openai",
     "langchain_mcp_adapters", "langchain_mcp_adapters.client",
+    "langchain_community", "langchain_community.agent_toolkits",
+    "langchain_community.agent_toolkits.sql", "langchain_community.agent_toolkits.sql.toolkit",
+    "langchain_community.utilities", "langchain_community.utilities.sql_database",
     "redis", "redis.asyncio", "redis.exceptions",
 ]
 for _mod in _EXTERNAL_MODS:

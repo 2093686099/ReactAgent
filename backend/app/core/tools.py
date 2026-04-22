@@ -4,8 +4,11 @@ from __future__ import annotations
 import asyncio
 import functools
 import logging
+from typing import Any
 
 import httpx
+from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
+from langchain_community.utilities.sql_database import SQLDatabase
 from langchain_core.tools import BaseTool, ToolException, tool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from pydantic import BaseModel, Field
@@ -142,6 +145,61 @@ async def refresh_mcp_tools() -> list:
     global _mcp_tools_cache
     _mcp_tools_cache = None
     return await get_mcp_tools()
+
+
+_sql_tools_cache: list | None = None
+_sql_lock: asyncio.Lock | None = None
+
+
+async def get_sql_tools(llm: Any) -> list:
+    """获取 MySQL 数据库工具集（list_tables / schema / query / query_checker），
+    分配给 data_analyst 子 Agent。
+
+    首次调用建立 SQLAlchemy engine，后续返回缓存。asyncio.Lock 保证并发安全。
+    MYSQL_URI 未配置 / 连接失败时降级为空列表，不阻塞主 Agent。
+    """
+    global _sql_tools_cache, _sql_lock
+    if _sql_tools_cache is not None:
+        return _sql_tools_cache
+    if _sql_lock is None:
+        _sql_lock = asyncio.Lock()
+    async with _sql_lock:
+        if _sql_tools_cache is not None:
+            return _sql_tools_cache
+        if not settings.mysql_uri:
+            _sql_tools_cache = []
+            return _sql_tools_cache
+        try:
+            db = SQLDatabase.from_uri(settings.mysql_uri)
+            toolkit = SQLDatabaseToolkit(db=db, llm=llm)
+            _sql_tools_cache = toolkit.get_tools()
+            logger.info(
+                "SQL 工具已缓存，共 %d 个 (dialect=%s, tables=%s)",
+                len(_sql_tools_cache),
+                db.dialect,
+                db.get_usable_table_names() or "<empty>",
+            )
+        except Exception as exc:
+            logger.warning(f"MySQL 连接失败，将禁用 data_analyst：{exc}")
+            _sql_tools_cache = []
+        return _sql_tools_cache
+
+
+async def refresh_sql_tools(llm: Any) -> list:
+    """强制清除缓存并重新获取 SQL 工具列表"""
+    global _sql_tools_cache
+    _sql_tools_cache = None
+    return await get_sql_tools(llm)
+
+
+# data_analyst 子 Agent 的 HITL 配置：
+# 只读类工具免审批，sql_db_query 必须人工审批（防 DELETE/UPDATE/DROP）。
+SQL_TOOL_INTERRUPT: dict[str, bool] = {
+    "sql_db_list_tables": False,
+    "sql_db_schema": False,
+    "sql_db_query_checker": False,
+    "sql_db_query": True,
+}
 
 
 class QueryKnowledgeBaseArgs(BaseModel):
