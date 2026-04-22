@@ -28,9 +28,9 @@ Progressive teaching project: build a production-grade ReAct Agent step by step.
 
 **Milestone Goal:** 为 AI Agent 个人助手构建现代化 Web 前端，对接已完成的 FastAPI 后端
 
-- [ ] **Phase 08: SSE Chat Foundation** - Next.js 项目脚手架 + SSE 流式聊天核心
+- [x] **Phase 08: SSE Chat Foundation** - Next.js 项目脚手架 + SSE 流式聊天核心 (completed 2026-04-13)
 - [x] **Phase 09: Tool Call UX + HITL Approval** - 工具调用指示器 + 人工审批卡片 (completed 2026-04-16)
-- [ ] **Phase 10: Session Management** - 会话侧边栏 + 历史消息加载
+- [x] **Phase 10: Session Management** - 会话侧边栏 + 历史消息加载 (completed 2026-04-21, UAT 8/8, G-01 defer)
 - [x] **Phase 11: Todo Panel** - Agent 任务规划面板 (completed 2026-04-22)
 - [ ] **Phase 12: Resilience** - SSE 断线重连 + HITL 状态持久化
 - [ ] **Phase 13: RAG Source Panel + Observability** - 工具 artifact 透传到前端引用卡片 + 调用链可观测
@@ -47,11 +47,11 @@ Progressive teaching project: build a production-grade ReAct Agent step by step.
   3. 用户消息和 AI 消息有明确的视觉区分（不同气泡样式/对齐方式）
   4. 新消息到达时聊天区域自动滚动到底部，发送中显示加载状态
   5. 请求失败时用户看到错误信息提示
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 Plans:
-- [ ] 08-01-PLAN.md — Next.js 脚手架 + 设计系统 + 类型/Store/API/SSE hooks
-- [ ] 08-02-PLAN.md — 全部 UI 组件（布局、消息气泡、输入框、Markdown 渲染）
-- [ ] 08-03-PLAN.md — 页面装配连接 + 错误处理 + 端到端验证
+- [x] 08-01-PLAN.md — Next.js 脚手架 + 设计系统 + 类型/Store/API/SSE hooks (completed 2026-04-13)
+- [x] 08-02-PLAN.md — 全部 UI 组件（布局、消息气泡、输入框、Markdown 渲染） (completed 2026-04-13)
+- [x] 08-03-PLAN.md — 页面装配连接 + 错误处理 + 端到端验证 (completed 2026-04-13)
 
 ### Phase 09: Tool Call UX + HITL Approval
 **Goal**: 用户可以在聊天中看到工具调用状态，并对危险操作进行审批决策
@@ -78,12 +78,12 @@ Plans:
   2. 用户可以点击切换到不同会话，历史消息正确加载显示
   3. 切换会话时旧的 SSE 连接正确关闭，不出现连接泄漏
   4. 用户可以删除不需要的会话
-**Plans:** 4 plans
+**Plans:** 4/4 plans complete (UAT 8/8, G-01 defer → Phase 11/hotfix)
 Plans:
 - [x] 10-01-PLAN.md — 后端基础层：history + session/task 扩展 + sessions API + pytest 全绿（Wave 0，autonomous） (completed 2026-04-21)
-- [ ] 10-02-PLAN.md — 前端 vitest 最小引入 + time-group 纯函数 + 单元测试（Wave 0，autonomous，与 10-01 并行）
-- [ ] 10-03-PLAN.md — 前端数据层：types/api/session-store/chat-store.loadHistory/useSSE 双参数（Wave 1，autonomous，depends_on 10-01）
-- [ ] 10-04-PLAN.md — Sidebar 组件 + page.tsx 组合 + Success Criteria 1-4 手验（Wave 2，autonomous=false，depends_on 10-02 + 10-03）
+- [x] 10-02-PLAN.md — 前端 vitest 最小引入 + time-group 纯函数 + 单元测试（Wave 0，autonomous，与 10-01 并行） (completed 2026-04-21)
+- [x] 10-03-PLAN.md — 前端数据层：types/api/session-store/chat-store.loadHistory/useSSE 双参数（Wave 1，autonomous，depends_on 10-01） (completed 2026-04-21)
+- [x] 10-04-PLAN.md — Sidebar 组件 + page.tsx 组合 + Success Criteria 1-4 手验（Wave 2，autonomous=false，depends_on 10-02 + 10-03） (completed 2026-04-21)
 **UI hint**: yes
 
 ### Phase 11: Todo Panel
