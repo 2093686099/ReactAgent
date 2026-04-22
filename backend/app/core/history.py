@@ -129,6 +129,7 @@ async def load_history_for_session(
     if db.checkpointer is None:
         return {
             "messages": [],
+            "todos": [],
             "active_task": active_task,
             "truncate_after_active_task": False,
         }
@@ -138,11 +139,25 @@ async def load_history_for_session(
     if ckpt_tuple is None:
         return {
             "messages": [],
+            "todos": [],
             "active_task": active_task,
             "truncate_after_active_task": False,
         }
 
     raw = (ckpt_tuple.checkpoint or {}).get("channel_values", {}).get("messages", []) or []
+    raw_todos = (ckpt_tuple.checkpoint or {}).get("channel_values", {}).get("todos", []) or []
+
+    # Todo 形状来自 langchain TodoListMiddleware：{"content": str, "status": str}
+    # 兜底（forward-compat）：丢弃非 dict 元素，只透出 content/status，缺失字段给默认值
+    todos: list[dict] = [
+        {
+            "content": t.get("content", ""),
+            "status": t.get("status", "pending"),
+        }
+        for t in raw_todos
+        if isinstance(t, dict)
+    ]
+
     truncate = bool(
         active_task is not None
         and raw
@@ -150,6 +165,7 @@ async def load_history_for_session(
     )
     return {
         "messages": messages_to_segments(raw),
+        "todos": todos,
         "active_task": active_task,
         "truncate_after_active_task": truncate,
     }
