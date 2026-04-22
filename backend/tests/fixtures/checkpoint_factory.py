@@ -54,11 +54,16 @@ def make_tool(name: str, content: str, msg_id: str | None = None):
     return msg
 
 
-def make_checkpoint_tuple(messages: list[Any]):
+def make_checkpoint_tuple(messages: list[Any], todos: list[dict] | None = None):
     """构造一个与 AsyncPostgresSaver.aget_tuple() 返回值形状相同的对象。
 
     真实对象 shape: CheckpointTuple(checkpoint={"channel_values": {"messages": [...]}})
+
+    todos=None → channel_values 不含 "todos" 键（模拟从未触发 write_todos 的 checkpoint）
+    todos=[] → channel_values 含 "todos": []
+    todos=[...] → channel_values 含 "todos": [...]
     """
-    return SimpleNamespace(
-        checkpoint={"channel_values": {"messages": messages}},
-    )
+    channel_values: dict = {"messages": messages}
+    if todos is not None:
+        channel_values["todos"] = todos
+    return SimpleNamespace(checkpoint={"channel_values": channel_values})
