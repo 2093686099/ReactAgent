@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pydantic import BaseModel
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Literal
 
 
 class ChatRequest(BaseModel):
@@ -45,3 +45,13 @@ class MemoryRequest(BaseModel):
     """写入长期记忆"""
     memory_info: str
     user_id: Optional[str] = None
+
+
+class TodoModel(BaseModel):
+    """langchain TodoListMiddleware Todo TypedDict 的 Pydantic 镜像。
+
+    用于声明 GET /api/sessions/{id}/messages 响应 todos 字段契约。
+    路径 A：history.py 返回 dict，端点不绑 response_model，改动面最小。
+    """
+    content: str
+    status: Literal["pending", "in_progress", "completed"]

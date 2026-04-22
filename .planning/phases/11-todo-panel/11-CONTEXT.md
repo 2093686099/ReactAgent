@@ -34,7 +34,7 @@
 
 ### 三态视觉与动效
 - **D-08:** 三态图标（左侧 16px 圆形）：
-  - `pending`：空心圆，`border: 1.5px solid var(--color-border-default)`
+  - `pending`：空心圆，`border: 1.5px solid var(--color-border-standard)`
   - `in_progress`：半圈 SVG spinner（`stroke: var(--color-accent)` 即 `#5e6ad2` 品牌色），循环旋转 1s linear
   - `completed`：实心圆填充 `var(--color-accent)` + 白色 ✓（Lucide `Check` 12px）
   - 文案颜色**不随状态变**，始终 `text-secondary`（Linear 惯例，避免 completed 显灰导致扫读成本上升）。
