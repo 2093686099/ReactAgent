@@ -89,6 +89,11 @@ async def resume(
     # 抢在 hitl_resolved 之前 XADD，从而触发 G-01（replay 客户端看到 done 时
     # 仍未收敛的 pending HitlSegment）。先 publish 保证 XADD 顺序与逻辑顺序一致。
     # 事件 payload 刻意最小化，不携带 edited_args（见 CONTEXT additional_constraints）。
+    #
+    # 单工具假设（v2.0）：当前生产路径 HITL 每个 interrupt 仅包含单个 action_request，
+    # 因此仅对 action_requests[0] publish 一帧 hitl_resolved。若未来协议扩展为批量
+    # 多工具审批，需要改为循环 publish 每一条 action_request，否则剩余 action 对应的
+    # replay 客户端 pending HitlSegment 将永远停留 pending 状态（G-01 对批量场景复发）。
     action_req = (request.action_requests or [{}])[0]
     await task_bus.publish_event(
         request.task_id,
