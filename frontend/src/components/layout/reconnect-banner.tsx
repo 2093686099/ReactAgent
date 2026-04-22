@@ -16,7 +16,7 @@ export function ReconnectBanner() {
     return () => window.clearTimeout(timer);
   }, [status]);
 
-  if (!visible && status === "connected") {
+  if (!visible) {
     return null;
   }
 
