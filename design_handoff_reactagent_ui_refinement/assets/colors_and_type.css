@@ -1,0 +1,258 @@
+/*
+  Wenhua Design System — Colors & Type
+  Linear-inspired dark-mode-first design language.
+  All tokens sourced from DESIGN.md + frontend/src/app/globals.css.
+*/
+
+:root {
+  /* ── Typography ─────────────────────────────────────────── */
+  --font-sans: "Inter", "Inter Variable", -apple-system, "SF Pro Display",
+    system-ui, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans",
+    "Helvetica Neue", sans-serif;
+  --font-mono: "Berkeley Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* OpenType identity — MUST be on every Inter text node */
+  --font-feature-settings: "cv01", "ss03";
+
+  /* ── Backgrounds (luminance-stacked) ───────────────────── */
+  --bg-deepest: #08090a;   /* marketing black (page bg) */
+  --bg-panel: #0f1011;     /* sidebar / panel */
+  --bg-surface: #191a1b;   /* cards, dropdowns, elevated */
+  --bg-hover: #28282c;     /* lightest dark — hover states */
+
+  /* ── Text (cool gray ladder) ───────────────────────────── */
+  --fg1: #f7f8f8;   /* primary — never pure white */
+  --fg2: #d0d6e0;   /* secondary — body text */
+  --fg3: #8a8f98;   /* tertiary — placeholders, metadata */
+  --fg4: #62666d;   /* quaternary — timestamps, disabled */
+
+  /* ── Brand / Accent (the only chromatic color) ─────────── */
+  --accent: #5e6ad2;          /* brand indigo — CTA backgrounds */
+  --accent-violet: #7170ff;   /* interactive accent — links, active */
+  --accent-hover: #828fff;    /* hover state on accent */
+  --accent-security: #7a7fad; /* muted indigo — security UI */
+
+  /* ── Status ────────────────────────────────────────────── */
+  --success: #10b981;         /* pills, completion */
+  --success-alt: #27a644;     /* in-progress indicators */
+  --error: #ef4444;
+
+  /* ── Borders (semi-transparent white is the default) ───── */
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-standard: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(255, 255, 255, 0.12);
+  --border-solid-1: #23252a;
+  --border-solid-2: #34343a;
+  --border-solid-3: #3e3e44;
+  --line-tint: #141516;
+  --line-tertiary: #18191a;
+
+  /* ── Overlay ───────────────────────────────────────────── */
+  --overlay: rgba(0, 0, 0, 0.85);
+
+  /* ── Radii ─────────────────────────────────────────────── */
+  --radius-micro: 2px;     /* inline badges, toolbar btns */
+  --radius-sm: 4px;        /* list items */
+  --radius-md: 6px;        /* buttons, inputs */
+  --radius-lg: 8px;        /* cards, dropdowns, popovers */
+  --radius-xl: 12px;       /* panels, featured cards */
+  --radius-2xl: 22px;      /* large panel elements */
+  --radius-pill: 9999px;   /* chips, filter pills */
+
+  /* ── Shadows (white borders > drop shadows on dark) ────── */
+  --shadow-subtle: rgba(0, 0, 0, 0.03) 0px 1.2px 0px 0px;
+  --shadow-ring: rgba(0, 0, 0, 0.2) 0px 0px 0px 1px;
+  --shadow-elevated: rgba(0, 0, 0, 0.4) 0px 2px 4px;
+  --shadow-inset: rgba(0, 0, 0, 0.2) 0px 0px 12px 0px inset;
+  --shadow-focus: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+  --shadow-dialog:
+    rgba(0, 0, 0, 0) 0px 8px 2px,
+    rgba(0, 0, 0, 0.01) 0px 5px 2px,
+    rgba(0, 0, 0, 0.04) 0px 3px 2px,
+    rgba(0, 0, 0, 0.07) 0px 1px 1px,
+    rgba(0, 0, 0, 0.08) 0px 0px 1px;
+
+  /* ── Spacing (8px grid + optical adjustments) ──────────── */
+  --space-px: 1px;
+  --space-1: 4px;
+  --space-optical-sm: 7px;
+  --space-2: 8px;
+  --space-optical-md: 11px;
+  --space-3: 12px;
+  --space-optical-lg: 19px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-optical-xl: 22px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-optical-xxl: 35px;
+}
+
+/* ── Base element styles ─────────────────────────────────── */
+html {
+  font-family: var(--font-sans);
+  background: var(--bg-deepest);
+  color: var(--fg1);
+  font-feature-settings: var(--font-feature-settings);
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-panel);
+  color: var(--fg1);
+  font-feature-settings: var(--font-feature-settings);
+}
+
+::selection {
+  background: rgba(94, 106, 210, 0.45);
+  color: var(--fg1);
+}
+
+/* ── Semantic type scale (Linear hierarchy) ──────────────── */
+/* Display sizes use aggressive negative tracking; weight 510 is signature */
+
+.type-display-xl,
+h1.display {
+  font-family: var(--font-sans);
+  font-size: 72px;
+  font-weight: 510;
+  line-height: 1;
+  letter-spacing: -1.584px;
+}
+
+.type-display-lg {
+  font-size: 64px;
+  font-weight: 510;
+  line-height: 1;
+  letter-spacing: -1.408px;
+}
+
+.type-display {
+  font-size: 48px;
+  font-weight: 510;
+  line-height: 1;
+  letter-spacing: -1.056px;
+}
+
+h1,
+.type-h1 {
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 1.125;
+  letter-spacing: -0.704px;
+}
+
+h2,
+.type-h2 {
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.333;
+  letter-spacing: -0.288px;
+}
+
+h3,
+.type-h3 {
+  font-size: 20px;
+  font-weight: 590;
+  line-height: 1.333;
+  letter-spacing: -0.24px;
+}
+
+.type-body-lg {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: -0.165px;
+}
+
+.type-body-emphasis {
+  font-size: 17px;
+  font-weight: 590;
+  line-height: 1.6;
+}
+
+p,
+.type-body {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.type-body-medium {
+  font-size: 16px;
+  font-weight: 510;
+  line-height: 1.5;
+}
+
+.type-body-semibold {
+  font-size: 16px;
+  font-weight: 590;
+  line-height: 1.5;
+}
+
+.type-small {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: -0.165px;
+}
+
+.type-small-medium {
+  font-size: 15px;
+  font-weight: 510;
+  line-height: 1.6;
+  letter-spacing: -0.165px;
+}
+
+.type-caption-lg {
+  font-size: 14px;
+  font-weight: 510;
+  line-height: 1.5;
+  letter-spacing: -0.182px;
+}
+
+.type-caption {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: -0.13px;
+}
+
+.type-label {
+  font-size: 12px;
+  font-weight: 510;
+  line-height: 1.4;
+}
+
+.type-micro {
+  font-size: 11px;
+  font-weight: 510;
+  line-height: 1.4;
+}
+
+.type-tiny {
+  font-size: 10px;
+  font-weight: 510;
+  line-height: 1.5;
+  letter-spacing: -0.15px;
+}
+
+code,
+.type-mono,
+pre,
+kbd,
+samp {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+/* Strong emphasis maxes out at 590 — never use 700 */
+strong,
+b {
+  font-weight: 590;
+}

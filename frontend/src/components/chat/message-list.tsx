@@ -1,3 +1,4 @@
+import { Sparkles } from "lucide-react";
 import type { RefObject } from "react";
 import { MessageBubble } from "@/components/chat/message-bubble";
 import { StreamingDots } from "@/components/chat/streaming-dots";
@@ -30,14 +31,31 @@ export function MessageList({
   const isHitlSubmitting = status === "sending";
 
   return (
-    <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto">
-      <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-6 py-6">
+    <div
+      ref={scrollRef}
+      onScroll={onScroll}
+      className="nice-scroll flex-1 overflow-y-auto overflow-x-hidden"
+    >
+      <div className="mx-auto flex min-h-full w-full max-w-[720px] flex-col gap-[22px] px-6 pb-6 pt-7">
         {messages.length === 0 && status === "idle" ? (
-          <div className="flex flex-1 items-center justify-center text-[15px] text-[var(--color-text-tertiary)]">
-            你好，有什么可以帮你的？
+          <div className="flex flex-1 flex-col items-center justify-center gap-3.5 py-20 text-[var(--color-text-tertiary)]">
+            <span
+              className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] text-white"
+              style={{
+                background:
+                  "linear-gradient(135deg, var(--color-accent), var(--color-accent-violet))",
+                boxShadow:
+                  "0 4px 16px rgba(113,112,255,0.2), inset 0 0 0 1px rgba(255,255,255,0.1)",
+              }}
+            >
+              <Sparkles size={18} aria-hidden="true" />
+            </span>
+            <span className="text-[15px] tracking-[-0.165px] text-[var(--color-text-secondary)]">
+              你好，有什么可以帮你的？
+            </span>
           </div>
         ) : (
-          <div className="space-y-4">
+          <>
             {messages.map((message) => (
               <MessageBubble
                 key={message.id}
@@ -49,13 +67,27 @@ export function MessageList({
                 onFeedback={onFeedback}
               />
             ))}
-            {status === "sending" ? <StreamingDots /> : null}
+            {status === "sending" ? (
+              <div className="flex items-start gap-3.5">
+                <span
+                  className="inline-flex h-[22px] w-[22px] flex-none items-center justify-center rounded-[6px] text-white"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, var(--color-accent), var(--color-accent-violet))",
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(255,255,255,0.08)",
+                  }}
+                >
+                  <Sparkles size={11} aria-hidden="true" />
+                </span>
+                <StreamingDots />
+              </div>
+            ) : null}
             {status === "error" && errorMessage ? (
-              <p className="text-[15px] text-[var(--color-error)]">
+              <p className="text-[14px] text-[var(--color-error)]">
                 Agent 执行出错：{errorMessage}
               </p>
             ) : null}
-          </div>
+          </>
         )}
       </div>
     </div>

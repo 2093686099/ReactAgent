@@ -24,16 +24,30 @@ export function SessionItem({ session, active, onSelect, onDelete }: Props) {
         }
       }}
       className={[
-        "group relative flex items-center justify-between gap-2",
-        "h-8 px-3 rounded-md cursor-pointer",
-        "text-[14px] font-[510]",
-        "transition-colors",
+        "group relative flex cursor-pointer items-center gap-2",
+        "rounded-[5px] py-[6px] pl-3 pr-2.5 leading-[1.4]",
+        "text-[12.5px] transition-colors duration-120",
         active
-          ? "bg-[rgba(255,255,255,0.05)] text-[var(--color-text-primary)] border-l-2 border-l-[#5e6ad2]"
-          : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]",
+          ? "bg-[rgba(113,112,255,0.08)] text-[var(--color-text-primary)]"
+          : "text-[var(--color-text-tertiary)] hover:bg-white/[0.03] hover:text-[var(--color-text-secondary)]",
       ].join(" ")}
     >
-      <span className="truncate">{title}</span>
+      {/* 左侧纵向规则线（方案 B 标志） */}
+      <span
+        aria-hidden="true"
+        className="absolute inset-y-1.5 left-1 w-[2px] rounded-[2px]"
+        style={{
+          background: active ? "var(--color-accent-violet)" : "transparent",
+        }}
+      />
+      <span
+        className={[
+          "flex-1 overflow-hidden text-ellipsis whitespace-nowrap",
+          active ? "font-[510]" : "",
+        ].join(" ")}
+      >
+        {title}
+      </span>
       <button
         type="button"
         aria-label="删除会话"
@@ -41,9 +55,9 @@ export function SessionItem({ session, active, onSelect, onDelete }: Props) {
           e.stopPropagation();
           onDelete(session.id);
         }}
-        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-[rgba(255,255,255,0.08)]"
+        className="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/[0.08]"
       >
-        <Trash2 size={14} className="text-[var(--color-text-tertiary)]" />
+        <Trash2 size={12} className="text-[var(--color-text-quaternary)]" />
       </button>
     </div>
   );

@@ -96,6 +96,15 @@ def initialize_llm(llm_type: str | None = None) -> ChatOpenAI:
     return llm_chat
 
 
+def get_model_info(llm_type: str | None = None) -> dict:
+    """返回当前 LLM 的 provider 与 model 名称，用于前端展示（不含 api_key）。"""
+    llm_type = llm_type or settings.llm_type
+    configs = _model_configs()
+    if llm_type not in configs:
+        return {"provider": llm_type, "model": None}
+    return {"provider": llm_type, "model": configs[llm_type]["chat_model"]}
+
+
 _llm_cache: dict[str, ChatOpenAI] = {}
 
 

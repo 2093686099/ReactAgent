@@ -11,10 +11,16 @@ export function TodoToggleButton() {
       type="button"
       aria-label="切换任务面板"
       aria-pressed={drawerOpen}
+      title="任务计划"
       onClick={toggleDrawer}
-      className="p-1.5 rounded hover:bg-[rgba(255,255,255,0.08)] transition-colors"
+      className={[
+        "inline-flex h-[26px] w-[26px] items-center justify-center rounded-[5px] transition-colors",
+        drawerOpen
+          ? "bg-[rgba(113,112,255,0.12)] text-[var(--color-accent-hover)]"
+          : "text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]",
+      ].join(" ")}
     >
-      <ListTodo size={14} aria-hidden="true" className="text-[var(--color-text-tertiary)]" />
+      <ListTodo size={13} aria-hidden="true" />
     </button>
   );
 }

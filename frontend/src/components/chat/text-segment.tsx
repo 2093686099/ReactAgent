@@ -10,17 +10,15 @@ type TextSegmentProps = {
 };
 
 function TextSegmentInner({ content, isStreaming = false }: TextSegmentProps) {
-  const rehypePlugins = isStreaming
-    ? [rehypeSanitize]
-    : [rehypeSanitize, rehypeHighlight];
+  const rehypePlugins = isStreaming ? [rehypeSanitize] : [rehypeSanitize, rehypeHighlight];
 
   return (
-    <div className="text-[15px] leading-6 text-[var(--color-text-secondary)]">
+    <div className="text-[14.5px] leading-[1.65] tracking-[-0.165px] text-[var(--color-text-secondary)] [&>*:last-child]:mb-0">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={rehypePlugins}
         components={{
-          p: ({ children }) => <p className="mb-2">{children}</p>,
+          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
           a: ({ children, href }) => (
             <a
               href={href}
@@ -36,7 +34,7 @@ function TextSegmentInner({ content, isStreaming = false }: TextSegmentProps) {
             if (!isBlock) {
               return (
                 <code
-                  className="rounded-sm bg-white/[0.05] px-1.5 py-0.5 font-mono text-[14px]"
+                  className="rounded-[3px] border border-[var(--color-border-subtle)] bg-white/[0.05] px-[5px] py-px font-mono text-[12.5px] text-[var(--color-text-primary)]"
                   {...props}
                 >
                   {children}
@@ -44,7 +42,7 @@ function TextSegmentInner({ content, isStreaming = false }: TextSegmentProps) {
               );
             }
             return (
-              <code className={`${className ?? ""} font-mono text-[14px]`} {...props}>
+              <code className={`${className ?? ""} font-mono text-[12.5px]`} {...props}>
                 {children}
               </code>
             );
@@ -54,15 +52,11 @@ function TextSegmentInner({ content, isStreaming = false }: TextSegmentProps) {
               {children}
             </pre>
           ),
-          ul: ({ children }) => (
-            <ul className="mb-2 list-disc space-y-2 pl-4">{children}</ul>
-          ),
-          ol: ({ children }) => (
-            <ol className="mb-2 list-decimal space-y-2 pl-4">{children}</ol>
-          ),
+          ul: ({ children }) => <ul className="mb-2 list-disc space-y-2 pl-4">{children}</ul>,
+          ol: ({ children }) => <ol className="mb-2 list-decimal space-y-2 pl-4">{children}</ol>,
           table: ({ children }) => (
             <div className="mb-3 overflow-x-auto">
-              <table className="min-w-full border-collapse text-[15px]">{children}</table>
+              <table className="min-w-full border-collapse text-[14.5px]">{children}</table>
             </div>
           ),
           th: ({ children }) => (
@@ -71,16 +65,14 @@ function TextSegmentInner({ content, isStreaming = false }: TextSegmentProps) {
             </th>
           ),
           td: ({ children }) => (
-            <td className="border border-[var(--color-border-standard)] px-2 py-1">
-              {children}
-            </td>
+            <td className="border border-[var(--color-border-standard)] px-2 py-1">{children}</td>
           ),
-          h1: ({ children }) => <h1 className="mb-2 text-[15px] font-[590]">{children}</h1>,
-          h2: ({ children }) => <h2 className="mb-2 text-[15px] font-[590]">{children}</h2>,
-          h3: ({ children }) => <h3 className="mb-2 text-[15px] font-[590]">{children}</h3>,
-          h4: ({ children }) => <h4 className="mb-2 text-[15px] font-[590]">{children}</h4>,
-          h5: ({ children }) => <h5 className="mb-2 text-[15px] font-[590]">{children}</h5>,
-          h6: ({ children }) => <h6 className="mb-2 text-[15px] font-[590]">{children}</h6>,
+          h1: ({ children }) => <h1 className="mb-2 text-[14.5px] font-[590]">{children}</h1>,
+          h2: ({ children }) => <h2 className="mb-2 text-[14.5px] font-[590]">{children}</h2>,
+          h3: ({ children }) => <h3 className="mb-2 text-[14.5px] font-[590]">{children}</h3>,
+          h4: ({ children }) => <h4 className="mb-2 text-[14.5px] font-[590]">{children}</h4>,
+          h5: ({ children }) => <h5 className="mb-2 text-[14.5px] font-[590]">{children}</h5>,
+          h6: ({ children }) => <h6 className="mb-2 text-[14.5px] font-[590]">{children}</h6>,
         }}
       >
         {content}

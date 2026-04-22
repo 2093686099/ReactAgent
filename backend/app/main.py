@@ -22,7 +22,7 @@ from app.infra.database import db
 from app.infra.redis import redis_manager
 from app.core.exceptions import BusinessError
 from app.api.deps import get_task_service
-from app.api import chat, sessions, memory
+from app.api import chat, sessions, memory, system
 
 
 def configure_windows_event_loop_policy() -> None:
@@ -80,6 +80,7 @@ app.add_middleware(
 app.include_router(chat.router)
 app.include_router(sessions.router)
 app.include_router(memory.router)
+app.include_router(system.router)
 
 
 @app.get("/health")

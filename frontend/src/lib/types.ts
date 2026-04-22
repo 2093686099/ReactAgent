@@ -58,3 +58,16 @@ export interface HistoryResponse {
   active_task: ActiveTask | null;
   truncate_after_active_task: boolean;
 }
+
+export type ToolCategory = "custom" | "researcher" | "data_analyst";
+
+export interface ToolMeta {
+  name: string;
+  category: ToolCategory;
+  hitl: boolean;
+}
+
+export interface SystemMeta {
+  llm: { provider: string; model: string | null };
+  tools: ToolMeta[];
+}

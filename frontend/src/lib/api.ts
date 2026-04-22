@@ -1,4 +1,4 @@
-import type { HistoryResponse, InvokeResponse, Session } from "@/lib/types";
+import type { HistoryResponse, InvokeResponse, Session, SystemMeta } from "@/lib/types";
 
 export const API_BASE = "http://localhost:8001";
 
@@ -22,10 +22,7 @@ function mapSession(raw: RawSession): Session {
   };
 }
 
-export async function invokeChat(
-  sessionId: string,
-  query: string
-): Promise<InvokeResponse> {
+export async function invokeChat(sessionId: string, query: string): Promise<InvokeResponse> {
   const response = await fetch(`${API_BASE}/api/chat/invoke`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -40,6 +37,12 @@ export async function invokeChat(
   return response.json() as Promise<InvokeResponse>;
 }
 
+export async function fetchSystemMeta(): Promise<SystemMeta> {
+  const r = await fetch(`${API_BASE}/api/system/meta`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return (await r.json()) as SystemMeta;
+}
+
 export async function listSessions(): Promise<Session[]> {
   const r = await fetch(`${API_BASE}/api/sessions`);
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -48,11 +51,7 @@ export async function listSessions(): Promise<Session[]> {
 }
 
 export async function createSessionAPI(
-  input: {
-    session_id?: string;
-    title?: string;
-    last_task_id?: string | null;
-  } = {},
+  input: { session_id?: string; title?: string; last_task_id?: string | null } = {},
 ): Promise<Session> {
   const r = await fetch(`${API_BASE}/api/sessions`, {
     method: "POST",
@@ -87,7 +86,7 @@ export async function loadHistory(sessionId: string): Promise<HistoryResponse> {
 export async function resumeChat(
   taskId: string,
   responseType: "approve" | "reject",
-  message?: string
+  message?: string,
 ): Promise<InvokeResponse> {
   const body: Record<string, unknown> = {
     task_id: taskId,

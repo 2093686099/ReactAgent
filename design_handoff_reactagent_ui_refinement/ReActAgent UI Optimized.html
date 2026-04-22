@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN" class="dark">
+<head>
+<meta charset="utf-8">
+<title>ReactAgent — UI/UX Refined</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;510;590;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/colors_and_type.css">
+<link rel="stylesheet" href="assets/variants.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  html, body { margin: 0; height: 100%; background: #08090a; overflow: hidden; }
+  * { box-sizing: border-box; }
+  button { font-family: inherit; }
+  /* Force artboard children to fill + clip — fixes drawer overflow */
+  [data-artboard-id] > div,
+  [data-artboard-id] > section { height: 100%; overflow: hidden; }
+  /* Prevent artboard children from showing their own scrollbars — the
+     inner panes manage their own overflow. */
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="assets/design-canvas.jsx"></script>
+<script type="text/babel" src="assets/variant-a.jsx"></script>
+<script type="text/babel" src="assets/variant-b.jsx"></script>
+
+<script type="text/babel">
+  const { useEffect } = React;
+
+  function App() {
+    useEffect(() => {
+      const t = setInterval(() => { if (window.lucide) window.lucide.createIcons(); }, 400);
+      return () => clearInterval(t);
+    }, []);
+
+    const { DesignCanvas, DCSection, DCArtboard } = window;
+
+    return (
+      <DesignCanvas title="ReAct Agent — UI/UX 精修" subtitle="方向 A · Refined Linear（含任务计划面板）">
+        <DCSection id="chat" title="全屏对话体验" subtitle="修复滚动条 · 强化呼吸感 · HITL 警示化 · 任务计划面板 · Composer 精修">
+          <DCArtboard id="a" label="方向 A — Refined Linear（终版）" width={1360} height={860}>
+            <window.VariantA />
+          </DCArtboard>
+          <DCArtboard id="b" label="方向 B — Editor Mode（对比参考）" width={1200} height={820}>
+            <window.VariantB />
+          </DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

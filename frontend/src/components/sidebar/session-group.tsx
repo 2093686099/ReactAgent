@@ -13,9 +13,12 @@ interface Props {
 
 export function SessionGroup({ label, items, activeId, onSelect, onDelete }: Props) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <div className="px-3 py-1 text-[12px] font-[510] text-[var(--color-text-quaternary)] uppercase tracking-wide">
-        {label}
+    <div className="mb-2.5 flex flex-col">
+      <div className="flex items-center justify-between px-1 pb-1.5 pt-2 text-[10.5px] font-[510] uppercase tracking-[0.04em] text-[var(--color-text-quaternary)]">
+        <span>{label}</span>
+        <span className="rounded-[3px] bg-white/[0.03] px-1.5 py-px font-mono text-[10px] font-normal">
+          {items.length}
+        </span>
       </div>
       {items.map((s) => (
         <SessionItem
