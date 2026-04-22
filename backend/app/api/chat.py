@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from app.models.chat import ChatRequest, ResumeRequest, TaskCreatedResponse
 from app.services.task import TaskService
@@ -94,19 +94,28 @@ async def resume(
 
 
 @router.get("/stream/{task_id}")
-async def stream(task_id: str, from_id: str = Query("0")):
+async def stream(
+    task_id: str,
+    from_id: str | None = Query(default=None),
+    last_event_id: str | None = Header(default=None, alias="Last-Event-ID"),
+):
     """
     SSE 端点。从 Redis Stream 读取任务事件并推送给客户端。
 
-    from_id: 起始位置。"0" 从头读（客户端首次连接）；重连时传入上次最后一条
-    事件的 id（SSE 的 Last-Event-ID）。这样客户端断开再连接不会丢失事件。
+    起点优先级：query(from_id) > header(Last-Event-ID) > "0"。
     """
+    # Phase 12 D-01 / D-05：query > header > "0"。浏览器 EventSource 自动重连时会在
+    # HTTP header 里带 Last-Event-ID，这条 fallback 让服务端无须前端改动就能续传。
+    effective_from_id = from_id if from_id is not None else (last_event_id or "0")
+
     meta = await task_bus.get_task_meta(task_id)
     if meta is None:
         raise HTTPException(status_code=404, detail=f"task {task_id} 不存在或已过期")
 
     async def event_stream():
-        async for entry_id, event, data in task_bus.read_events(task_id, from_id=from_id):
+        async for entry_id, event, data in task_bus.read_events(
+            task_id, from_id=effective_from_id
+        ):
             yield _format_sse(event, data, entry_id=entry_id)
             if event in ("done", "error"):
                 return
