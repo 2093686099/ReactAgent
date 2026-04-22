@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Next.js 前端
-status: executing
-stopped_at: Phase 11 complete
-last_updated: "2026-04-22T09:30:00.000Z"
-last_activity: 2026-04-22 Phase 11 complete — Todo Panel shipped
+status: discussing
+stopped_at: Phase 12 context gathered
+last_updated: "2026-04-22T09:55:00.000Z"
+last_activity: 2026-04-22 Phase 12 context gathered — Resilience discuss-phase done
 progress:
   total_phases: 6
   completed_phases: 4
@@ -21,18 +21,19 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** 用户通过自然语言与 AI Agent 对话，Agent 自主调用工具完成任务，关键操作经人工审批后执行
-**Current focus:** Phase 11 — Todo Panel ✅ COMPLETE
+**Current focus:** Phase 12 — Resilience（CONTEXT.md 完成，待进入 plan-phase）
 
 ## Current Position
 
-Phase: 11 (todo-panel) — ✅ COMPLETE (2026-04-22)
-Plan: 5/5 complete
-Status: Phase 11 shipped — UAT 9/9 pass, VERIFICATION passed, code review 0 Critical
-Last activity: 2026-04-22 Phase 11 complete — Todo Panel shipped
+Phase: 12 (resilience) — discuss-phase 完成
+CONTEXT.md: `.planning/phases/12-resilience/12-CONTEXT.md`（2026-04-22）
+Plans: 0/? — 待 `/gsd-plan-phase 12`
+Status: 4 个灰区决策已敲定（D-01 EventSource+Last-Event-ID、D-02 hitl_resolved 事件、D-03 from_id=0 重放、D-04 顶栏 banner）；G-01 gap 已按路线 A 并入本 Phase
+Last activity: 2026-04-22 Phase 12 context gathered — Resilience discuss-phase done
 
 Progress: [████████░░] 80%
 
-**Next phase:** Phase 10 (Session Management) remaining plans 10-02/10-03/10-04, or Phase 12 (Resilience).
+**Next phase:** `/gsd-plan-phase 12` 把 CONTEXT.md 的 D-01～D-15 拆成可执行 plan（建议 2-3 个 wave：后端 header+hitl_resolved / 前端 banner+resolve action / 人工 UAT）。
 
 ## Performance Metrics
 
@@ -79,6 +80,11 @@ Recent decisions affecting current work:
 - [Phase 11]: SSE-only auto-open 红线 — autoOpenDrawer 仅由 use-sse todo listener 触发，loadHistory 路径永不自动弹
 - [Phase 11]: setTodos 整体覆盖语义（无 merge/concat），保证 SSE reattach from_id=0 重放幂等
 - [Phase 11-INFRA]: dev 脚本移除 --turbopack（macOS 中文带空格路径 ENOENT race），build 保留 --turbopack
+- [Phase 12]: 路线 A — G-01（approve-then-switch HITL 复活）gap 并入 Phase 12 RESIL-02 自然路径，不再单独 hotfix
+- [Phase 12-D-01]: 继续使用 EventSource + Last-Event-ID header 重连（沿用 08-D-12），后端 /stream 加 header 注入，前端零改动
+- [Phase 12-D-02]: /resume 后 XADD `hitl_resolved` 事件（tool_name/call_id/decision/ts），前端 resolveLastPendingHitl 幂等收敛
+- [Phase 12-D-03]: RESIL-02 复用 from_id=0 全量重放，零新端点；依赖 D-02 的 resolved 信号闭环 G-01
+- [Phase 12-D-04]: 重连 UX 采用顶栏轻提示 banner（用户主动偏离 Recommended 的静默方案，强调可见性）
 
 ### Pending Todos
 
@@ -86,14 +92,13 @@ None yet.
 
 ### Blockers/Concerns
 
-- CHAT-08 requires a new backend endpoint to reconstruct message history from checkpoints — to be addressed in Phase 10 planning
-- RESIL-01 requires backend support for Last-Event-ID header — backend fix needed before Phase 12
+- ~~RESIL-01 requires backend support for Last-Event-ID header~~ → Phase 12-D-01 覆盖，plan-phase 时落地
 
 ## Session Continuity
 
 Last session: 2026-04-22
-Stopped at: Phase 11 complete — Todo Panel shipped (UAT 9/9, VERIFICATION passed, REVIEW 0 Critical)
-Resume file: --resume-file
+Stopped at: Phase 12 context gathered — CONTEXT.md 完成
+Resume file: `.planning/phases/12-resilience/12-CONTEXT.md`
 
 **Completed Phase:** 11 (todo-panel) — 5/5 plans — 2026-04-22
-**Next candidate:** Phase 10 residual (10-02/10-03/10-04) or Phase 12 (Resilience)
+**In Progress:** Phase 12 (resilience) — discuss-phase 完成，待 `/gsd-plan-phase 12`
