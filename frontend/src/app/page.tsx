@@ -55,7 +55,7 @@ export default function ChatPage() {
     // D-09 切换顺序：
     // ① 旧 SSE 由 useSSE effect cleanup 自然关闭（sessionId/taskId 变化触发）
     // ② 清空 chat-store
-    loadHistoryAction([]);
+    loadHistoryAction({ messages: [], todos: [] });
     // ③ 切换 active
     setActive(id);
     setCurrentTaskId(null);
@@ -66,7 +66,7 @@ export default function ChatPage() {
         hist.truncate_after_active_task && hist.messages.length > 0
           ? hist.messages.slice(0, -1)
           : hist.messages;
-      loadHistoryAction(msgs);
+      loadHistoryAction({ messages: msgs, todos: hist.todos });
       // ⑤ reattach
       if (hist.active_task?.task_id) {
         // 在途 task 的 assistant 输出还没持久化到 history，chat-store 的
@@ -123,7 +123,7 @@ export default function ChatPage() {
         await handleSwitch(next.id);
       } else {
         createLocal();
-        loadHistoryAction([]);
+        loadHistoryAction({ messages: [], todos: [] });
         setCurrentTaskId(null);
       }
     }
@@ -131,7 +131,7 @@ export default function ChatPage() {
 
   const handleNew = () => {
     createLocal();
-    loadHistoryAction([]);
+    loadHistoryAction({ messages: [], todos: [] });
     setCurrentTaskId(null);
   };
 

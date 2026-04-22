@@ -3,7 +3,9 @@
 import { useEffect } from "react";
 import { API_BASE } from "@/lib/api";
 import { getToolLabel } from "@/lib/tool-labels";
+import type { Todo } from "@/lib/types";
 import { useChatStore } from "@/stores/chat-store";
+import { useUIStore } from "@/stores/ui-store";
 
 function safeStringify(v: unknown): string {
   if (v == null) return "";
@@ -35,6 +37,8 @@ export function useSSE(taskId: string | null, sessionId: string): void {
   const addHitlSegment = useChatStore((state) => state.addHitlSegment);
   const setError = useChatStore((state) => state.setError);
   const setStatus = useChatStore((state) => state.setStatus);
+  const setTodos = useChatStore((s) => s.setTodos);
+  const autoOpenDrawer = useUIStore((s) => s.autoOpenDrawer);
 
   useEffect(() => {
     if (!taskId) {
@@ -110,6 +114,22 @@ export function useSSE(taskId: string | null, sessionId: string): void {
       setStatus("interrupted");
     });
 
+    eventSource.addEventListener("todo", (event) => {
+      let payload: { todos?: Todo[] };
+      try {
+        payload = JSON.parse((event as MessageEvent).data);
+      } catch {
+        return; // 单帧坏数据不应中断流
+      }
+      if (!Array.isArray(payload.todos)) {
+        return;
+      }
+      setTodos(payload.todos);
+      if (payload.todos.length > 0) {
+        autoOpenDrawer(sessionId);
+      }
+    });
+
     eventSource.onerror = () => {
       eventSource.close();
       if (!receivedTerminalEvent) {
@@ -132,5 +152,7 @@ export function useSSE(taskId: string | null, sessionId: string): void {
     finishMessage,
     setError,
     setStatus,
+    setTodos,
+    autoOpenDrawer,
   ]);
 }
