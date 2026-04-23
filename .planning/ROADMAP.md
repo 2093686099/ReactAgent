@@ -32,7 +32,7 @@ Progressive teaching project: build a production-grade ReAct Agent step by step.
 - [x] **Phase 09: Tool Call UX + HITL Approval** - 工具调用指示器 + 人工审批卡片 (completed 2026-04-16)
 - [x] **Phase 10: Session Management** - 会话侧边栏 + 历史消息加载 (completed 2026-04-21, UAT 8/8, G-01 defer)
 - [x] **Phase 11: Todo Panel** - Agent 任务规划面板 (completed 2026-04-22)
-- [ ] **Phase 12: Resilience** - SSE 断线重连 + HITL 状态持久化
+- [x] **Phase 12: Resilience** - SSE 断线重连 + HITL 状态持久化 (completed 2026-04-22)
 - [ ] **Phase 13: RAG Source Panel + Observability** - 工具 artifact 透传到前端引用卡片 + 调用链可观测
 
 ## Phase Details
@@ -109,23 +109,24 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. SSE 连接断开后自动重连，并从断点续传（不丢失断线期间的事件）
   2. 页面刷新后，如果 Agent 仍在等待审批，HITL 审批卡片能恢复显示
-**Plans:** 3 plans (Wave 1 backend / Wave 2 frontend / Wave 3 UAT；G-01 approve-then-switch 修复并入 RESIL-02 自然路径)
+**Plans:** 3/3 plans complete (Wave 1 backend / Wave 2 frontend / Wave 3 UAT；G-01 approve-then-switch 修复并入 RESIL-02 自然路径)
 Plans:
-- [ ] 12-01-backend-PLAN.md — Wave 1 后端：/stream 读 Last-Event-ID header + /resume 后 publish hitl_resolved + tests/test_resilience.py（autonomous=true）
-- [ ] 12-02-frontend-PLAN.md — Wave 2 前端：chat-store connectionStatus + resolveLastPendingHitl + use-sse hitl_resolved listener + reconnect-banner 组件 + chat-area 挂载 + 2 vitest 文件（autonomous=true，depends_on 12-01）
-- [ ] 12-03-uat-PLAN.md — Wave 3 人工 UAT：断网重连 / G-01 回归 / 刷新恢复 HITL / reject 闭环 4 场景 + 12-UAT.md（autonomous=false，depends_on 12-01 + 12-02）
+- [x] 12-01-backend-PLAN.md — Wave 1 后端：/stream 读 Last-Event-ID header + /resume 后 publish hitl_resolved + tests/test_resilience.py（autonomous=true） (completed 2026-04-22)
+- [x] 12-02-frontend-PLAN.md — Wave 2 前端：chat-store connectionStatus + resolveLastPendingHitl + use-sse hitl_resolved listener + reconnect-banner 组件 + chat-area 挂载 + 2 vitest 文件（autonomous=true，depends_on 12-01） (completed 2026-04-22)
+- [x] 12-03-uat-PLAN.md — Wave 3 人工 UAT：断网重连 / G-01 回归 / 刷新恢复 HITL / reject 闭环 4 场景 + 12-UAT.md（autonomous=false，depends_on 12-01 + 12-02） (completed 2026-04-22)
 **UI hint**: yes
 
 ### Phase 13: RAG Source Panel + Observability
 **Goal**: 用户在 Agent 调用 RAG 知识库时能看到清晰的引用来源，系统侧能观测到 RAG 工具调用的路由分布与错误分布
 **Depends on**: Phase 09 (Tool Call UX / SSE artifact infra)
-**Requirements**: TBD（在 /gsd-discuss-phase 13 里定义，候选：RAG-01 artifact→SSE 透传、RAG-02 SourceCards 组件、RAG-03 KB_ERROR/KB_EMPTY 视觉提示、RAG-04 结构化日志）
+**Requirements**: RAG-01, RAG-02, RAG-03, RAG-04, RAG-05
 **Success Criteria** (what must be TRUE):
   1. AI 回复中使用 query_knowledge_base 工具时，UI 在回答下方展示最多 3 条来源卡片（源文件名 + 类别 + 180 字 snippet）
   2. ToolMessage.artifact 经由 SSE 事件透传到前端，前端不再二次请求 RAG 服务即可渲染来源
   3. 工具返回 KB_ERROR / KB_EMPTY 时，前端有明确区别于正常回答的视觉提示（而不是让用户误以为这就是答案）
   4. 后端结构化记录每次 query_knowledge_base 调用的 route 路径、error_type、document_count，可通过日志查询统计 web_search fallback 比例
-**Plans**: TBD
+  5. 切换会话或刷新页面后，历史消息中的来源卡片仍能从 checkpoint 重建并保留显示
+**Plans**: TBD（context gathered; awaiting `/gsd-plan-phase 13`）
 **UI hint**: yes
 **Design decisions**: see `.planning/notes/tool-artifact-consumption-decisions.md`（B-lite vs B-full vs C 的取舍）
 
@@ -143,5 +144,5 @@ Note: Phase 13 depends only on Phase 09 (Tool Call UX), can run parallel with 10
 | 9. Tool Call UX + HITL | v2.0 | 3/3 | Complete | 2026-04-16 |
 | 10. Session Management | v2.0 | 4/4 | Complete | 2026-04-21 |
 | 11. Todo Panel | v2.0 | 5/5 | Complete | 2026-04-22 |
-| 12. Resilience | v2.0 | 0/3 | Planning done | - |
-| 13. RAG Source Panel + Observability | v2.0 | 0/? | Not started | - |
+| 12. Resilience | v2.0 | 3/3 | Complete | 2026-04-22 |
+| 13. RAG Source Panel + Observability | v2.0 | 0/? | Context gathered | - |
