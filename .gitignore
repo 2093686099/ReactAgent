@@ -33,4 +33,8 @@ logfile/
 # Codex
 .codex/
 
-docs/
+.agents/
+
+docs/lab9/项目报告.md
+
+skills-lock.json

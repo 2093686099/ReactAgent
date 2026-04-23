@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1260 940" width="1260" height="940">
+<style>text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', 'Microsoft JhengHei', 'SimHei', sans-serif; }</style>
+<defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#5a5a5a"/>
+    </marker>
+    <filter id="shadow-soft">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#00000015"/>
+    </filter>
+  </defs>
+<rect width="1260" height="940" fill="#f8f6f3"/>
+<text x="630.0" y="46" text-anchor="middle" fill="#1a1a1a" font-size="22" font-weight="700">请求生命周期：invoke → SSE → HITL → resume</text>
+<text x="630.0" y="72" text-anchor="middle" fill="#6a6a6a" font-size="14">Zustand 前端 · FastAPI 后端 · Redis 事件总线 · Deep Agent 运行时</text>
+<rect x="15" y="110" width="190" height="54" rx="10" ry="10" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="110" y="142" text-anchor="middle" fill="#1a1a1a" font-size="14" font-weight="700">user · 浏览器</text>
+<line x1="110" y1="164" x2="110" y2="900" stroke="#8a8a8a" stroke-width="1.5" stroke-dasharray="4,4"/>
+<rect x="235" y="110" width="190" height="54" rx="10" ry="10" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="330" y="142" text-anchor="middle" fill="#1a1a1a" font-size="14" font-weight="700">ChatStore + use-sse</text>
+<line x1="330" y1="164" x2="330" y2="900" stroke="#8a8a8a" stroke-width="1.5" stroke-dasharray="4,4"/>
+<rect x="445" y="110" width="190" height="54" rx="10" ry="10" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="540" y="142" text-anchor="middle" fill="#1a1a1a" font-size="14" font-weight="700">FastAPI · api/chat</text>
+<line x1="540" y1="164" x2="540" y2="900" stroke="#8a8a8a" stroke-width="1.5" stroke-dasharray="4,4"/>
+<rect x="635" y="110" width="190" height="54" rx="10" ry="10" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="730" y="142" text-anchor="middle" fill="#1a1a1a" font-size="14" font-weight="700">TaskService</text>
+<line x1="730" y1="164" x2="730" y2="900" stroke="#8a8a8a" stroke-width="1.5" stroke-dasharray="4,4"/>
+<rect x="835" y="110" width="190" height="54" rx="10" ry="10" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="930" y="142" text-anchor="middle" fill="#1a1a1a" font-size="14" font-weight="700">Deep Agent</text>
+<line x1="930" y1="164" x2="930" y2="900" stroke="#8a8a8a" stroke-width="1.5" stroke-dasharray="4,4"/>
+<rect x="1045" y="110" width="190" height="54" rx="10" ry="10" fill="#e8e6e3" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="1140" y="142" text-anchor="middle" fill="#1a1a1a" font-size="14" font-weight="700">Redis Streams</text>
+<line x1="1140" y1="164" x2="1140" y2="900" stroke="#8a8a8a" stroke-width="1.5" stroke-dasharray="4,4"/>
+<text x="30" y="210" fill="#6a6a6a" font-size="13" font-weight="700">① invoke</text>
+<line x1="110" y1="230" x2="330" y2="230" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="165.3" y="212" width="109.4" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="220.0" y="222" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">input + enter</text></g>
+<line x1="330" y1="260" x2="540" y2="260" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="349.1" y="242" width="171.8" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="435.0" y="252" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">POST /api/chat/invoke</text></g>
+<rect x="534" y="260" width="12" height="100" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1"/>
+<line x1="540" y1="290" x2="730" y2="290" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="541.3" y="272" width="187.4" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="635.0" y="282" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">create_task(session_id)</text></g>
+<rect x="724" y="290" width="12" height="45" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1"/>
+<line x1="730" y1="320" x2="1140" y2="320" stroke="#5a5a5a" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+<g><rect x="860.8" y="302" width="148.4" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="935.0" y="312" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">XADD task_id start</text></g>
+<line x1="540" y1="350" x2="330" y2="350" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="388.1" y="332" width="93.80000000000001" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="435.0" y="342" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">{ task_id }</text></g>
+<text x="30" y="398" fill="#6a6a6a" font-size="13" font-weight="700">② SSE 建连</text>
+<line x1="330" y1="420" x2="540" y2="420" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="282.79999999999995" y="402" width="304.40000000000003" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="435.0" y="412" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">EventSource /api/chat/events/{task_id}</text></g>
+<rect x="534" y="420" width="12" height="60" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="1"/>
+<line x1="540" y1="450" x2="1140" y2="450" stroke="#5a5a5a" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+<g><rect x="781.4" y="432" width="117.20000000000002" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="840.0" y="442" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">XREAD blocking</text></g>
+<text x="30" y="518" fill="#6a6a6a" font-size="13" font-weight="700">③ Agent 事件流</text>
+<rect x="924" y="540" width="12" height="220" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1"/>
+<line x1="730" y1="540" x2="930" y2="540" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="771.4" y="522" width="117.20000000000002" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="830.0" y="532" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">ainvoke() 后台任务</text></g>
+<line x1="930" y1="580" x2="1140" y2="580" stroke="#5a5a5a" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+<g><rect x="972.5" y="562" width="125.00000000000001" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="1035.0" y="572" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">ai_chunk(token)</text></g>
+<line x1="1140" y1="610" x2="540" y2="610" stroke="#5a5a5a" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+<g><rect x="785.3" y="592" width="109.4" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="840.0" y="602" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">XREAD → frame</text></g>
+<line x1="540" y1="640" x2="330" y2="640" stroke="#5a5a5a" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+<g><rect x="372.5" y="622" width="125.00000000000001" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="435.0" y="632" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">event: ai_chunk</text></g>
+<rect x="290" y="665" width="880" height="150" rx="8" ry="8" fill="none" stroke="#b08a3e" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="310" y="685" fill="#8a5a1a" font-size="13" font-weight="700">HITL 中断 · 等待人工决策</text>
+<line x1="930" y1="695" x2="1140" y2="695" stroke="#5a5a5a" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+<g><rect x="925.7" y="677" width="218.60000000000002" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="1035.0" y="687" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">hitl event(tool=book_hotel)</text></g>
+<line x1="1140" y1="720" x2="330" y2="720" stroke="#5a5a5a" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+<g><rect x="688.1" y="702" width="93.80000000000001" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="735.0" y="712" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">event: hitl</text></g>
+<line x1="330" y1="745" x2="110" y2="745" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="141.89999999999998" y="727" width="156.20000000000002" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="220.0" y="737" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">HitlCard 渲染 · Y/N/F</text></g>
+<line x1="110" y1="770" x2="330" y2="770" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="126.3" y="752" width="187.4" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="220.0" y="762" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">approve / edit / reject</text></g>
+<line x1="330" y1="795" x2="540" y2="795" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="349.1" y="777" width="171.8" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="435.0" y="787" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">POST /api/chat/resume</text></g>
+<text x="30" y="840" fill="#6a6a6a" font-size="13" font-weight="700">④ resume → done</text>
+<line x1="540" y1="855" x2="930" y2="855" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="633.5" y="837" width="203.00000000000003" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="735.0" y="847" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">Command(resume=decisions)</text></g>
+<line x1="930" y1="880" x2="1140" y2="880" stroke="#5a5a5a" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+<g><rect x="953.0" y="862" width="164.0" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="1035.0" y="872" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">tool_done · task_end</text></g>
+<line x1="1140" y1="905" x2="330" y2="905" stroke="#5a5a5a" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+<g><rect x="688.1" y="887" width="93.80000000000001" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="735.0" y="897" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">event: done</text></g>
+<rect x="1020" y="26" width="220" height="58" rx="8" ry="8" fill="#ffffff" stroke="#4a4a4a" stroke-width="1.5"/>
+<line x1="1032" y1="46" x2="1062" y2="46" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="1070" y="50" fill="#3a3a3a" font-size="12">同步调用</text>
+<line x1="1032" y1="68" x2="1062" y2="68" stroke="#5a5a5a" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+<text x="1070" y="72" fill="#3a3a3a" font-size="12">事件 / 异步</text>
+</svg>

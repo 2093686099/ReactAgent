@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 820" width="1240" height="820">
+<style>text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', 'Microsoft JhengHei', 'SimHei', sans-serif; }</style>
+<defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#5a5a5a"/>
+    </marker>
+    <filter id="shadow-soft">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#00000015"/>
+    </filter>
+  </defs>
+<rect width="1240" height="820" fill="#f8f6f3"/>
+<text x="620.0" y="46" text-anchor="middle" fill="#1a1a1a" font-size="22" font-weight="700">Agent 工具拓扑 · HITL 白名单分级</text>
+<text x="620.0" y="72" text-anchor="middle" fill="#6a6a6a" font-size="14">主 Agent · 子 Agent · 工具分组 · interrupt_on 门禁</text>
+<rect x="520" y="120" width="200" height="90" rx="12" ry="12" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="620.0" y="155.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">Main Agent</text>
+<text x="620.0" y="177.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">工具路由 · 任务规划</text>
+<text x="620.0" y="193.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">deepagents.create_deep_agent</text>
+<rect x="100" y="290" width="220" height="90" rx="12" ry="12" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="210.0" y="325.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">researcher (SubAgent)</text>
+<text x="210.0" y="347.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">高德地图 MCP</text>
+<text x="210.0" y="363.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">只读 · 地理信息</text>
+<rect x="920" y="290" width="220" height="90" rx="12" ry="12" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="1030.0" y="325.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">data_analyst (SubAgent)</text>
+<text x="1030.0" y="347.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">MySQL SQLToolkit</text>
+<text x="1030.0" y="363.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">强制 HITL on sql_db_query</text>
+<path d="M 560 210 L 560 255 L 210 255 L 210 290" fill="none" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="318.6" y="237" width="132.8" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="385" y="247" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">task(researcher)</text></g>
+<path d="M 680 210 L 680 255 L 1030 255 L 1030 290" fill="none" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="780.8" y="237" width="148.4" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="855" y="247" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">task(data_analyst)</text></g>
+<rect x="360" y="260" width="520" height="210" rx="14" ry="14" fill="none" stroke="#4a4a4a" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="620" y="282" text-anchor="middle" fill="#1a1a1a" font-size="13" font-weight="700">主 Agent 工具集</text>
+<line x1="620" y1="210" x2="620" y2="260" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="580.9" y="228" width="78.2" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="620" y="238" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">tool_call</text></g>
+<rect x="375" y="300" width="90" height="56" rx="8" ry="8" fill="#c8e6b8" stroke="#4a4a4a" stroke-width="1.5"/>
+<text x="420" y="320" text-anchor="middle" fill="#1a1a1a" font-size="11" font-weight="700">multiply</text>
+<text x="420" y="336" text-anchor="middle" fill="#3a3a3a" font-size="10">示例</text>
+<text x="420" y="350" text-anchor="middle" fill="#2e7a2e" font-size="9" font-weight="700">✓ 无 HITL</text>
+<rect x="475" y="300" width="90" height="56" rx="8" ry="8" fill="#c8e6b8" stroke="#4a4a4a" stroke-width="1.5"/>
+<text x="520" y="320" text-anchor="middle" fill="#1a1a1a" font-size="11" font-weight="700">query_knowledge_base</text>
+<text x="520" y="336" text-anchor="middle" fill="#3a3a3a" font-size="10">RAG</text>
+<text x="520" y="350" text-anchor="middle" fill="#2e7a2e" font-size="9" font-weight="700">✓ 无 HITL</text>
+<rect x="575" y="300" width="90" height="56" rx="8" ry="8" fill="#c8e6b8" stroke="#4a4a4a" stroke-width="1.5"/>
+<text x="620" y="320" text-anchor="middle" fill="#1a1a1a" font-size="11" font-weight="700">read_file</text>
+<text x="620" y="336" text-anchor="middle" fill="#3a3a3a" font-size="10">FS 读</text>
+<text x="620" y="350" text-anchor="middle" fill="#2e7a2e" font-size="9" font-weight="700">✓ 无 HITL</text>
+<rect x="675" y="300" width="90" height="56" rx="8" ry="8" fill="#c8e6b8" stroke="#4a4a4a" stroke-width="1.5"/>
+<text x="720" y="320" text-anchor="middle" fill="#1a1a1a" font-size="11" font-weight="700">write_todos</text>
+<text x="720" y="336" text-anchor="middle" fill="#3a3a3a" font-size="10">任务板</text>
+<text x="720" y="350" text-anchor="middle" fill="#2e7a2e" font-size="9" font-weight="700">✓ 无 HITL</text>
+<rect x="775" y="300" width="90" height="56" rx="8" ry="8" fill="#c8e6b8" stroke="#4a4a4a" stroke-width="1.5"/>
+<text x="820" y="320" text-anchor="middle" fill="#1a1a1a" font-size="11" font-weight="700">task</text>
+<text x="820" y="336" text-anchor="middle" fill="#3a3a3a" font-size="10">子调度</text>
+<text x="820" y="350" text-anchor="middle" fill="#2e7a2e" font-size="9" font-weight="700">✓ 无 HITL</text>
+<rect x="385" y="380" width="106" height="72" rx="8" ry="8" fill="#f4c78a" stroke="#b86b1a" stroke-width="2"/>
+<text x="438" y="402" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="700">book_hotel</text>
+<text x="438" y="420" text-anchor="middle" fill="#3a2a10" font-size="11">外部预订</text>
+<text x="438" y="438" text-anchor="middle" fill="#8a3a0a" font-size="10" font-weight="700">⚠ HITL 门禁</text>
+<rect x="507" y="380" width="106" height="72" rx="8" ry="8" fill="#f4c78a" stroke="#b86b1a" stroke-width="2"/>
+<text x="560" y="402" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="700">execute</text>
+<text x="560" y="420" text-anchor="middle" fill="#3a2a10" font-size="11">代码执行</text>
+<text x="560" y="438" text-anchor="middle" fill="#8a3a0a" font-size="10" font-weight="700">⚠ HITL 门禁</text>
+<rect x="629" y="380" width="106" height="72" rx="8" ry="8" fill="#f4c78a" stroke="#b86b1a" stroke-width="2"/>
+<text x="682" y="402" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="700">write_file</text>
+<text x="682" y="420" text-anchor="middle" fill="#3a2a10" font-size="11">FS 写</text>
+<text x="682" y="438" text-anchor="middle" fill="#8a3a0a" font-size="10" font-weight="700">⚠ HITL 门禁</text>
+<rect x="751" y="380" width="106" height="72" rx="8" ry="8" fill="#f4c78a" stroke="#b86b1a" stroke-width="2"/>
+<text x="804" y="402" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="700">edit_file</text>
+<text x="804" y="420" text-anchor="middle" fill="#3a2a10" font-size="11">FS 改</text>
+<text x="804" y="438" text-anchor="middle" fill="#8a3a0a" font-size="10" font-weight="700">⚠ HITL 门禁</text>
+<rect x="100" y="410" width="105" height="56" rx="8" ry="8" fill="#c8e6b8" stroke="#4a4a4a" stroke-width="1.5"/>
+<text x="152" y="430" text-anchor="middle" fill="#1a1a1a" font-size="11" font-weight="700">maps_geo</text>
+<text x="152" y="446" text-anchor="middle" fill="#3a3a3a" font-size="10">地址 → 坐标</text>
+<text x="152" y="460" text-anchor="middle" fill="#2e7a2e" font-size="9" font-weight="700">✓ 只读</text>
+<rect x="215" y="410" width="105" height="56" rx="8" ry="8" fill="#c8e6b8" stroke="#4a4a4a" stroke-width="1.5"/>
+<text x="267" y="430" text-anchor="middle" fill="#1a1a1a" font-size="11" font-weight="700">maps_regeocode</text>
+<text x="267" y="446" text-anchor="middle" fill="#3a3a3a" font-size="10">坐标 → 地址</text>
+<text x="267" y="460" text-anchor="middle" fill="#2e7a2e" font-size="9" font-weight="700">✓ 只读</text>
+<rect x="100" y="478" width="105" height="56" rx="8" ry="8" fill="#c8e6b8" stroke="#4a4a4a" stroke-width="1.5"/>
+<text x="152" y="498" text-anchor="middle" fill="#1a1a1a" font-size="11" font-weight="700">maps_text_search</text>
+<text x="152" y="514" text-anchor="middle" fill="#3a3a3a" font-size="10">关键词检索</text>
+<text x="152" y="528" text-anchor="middle" fill="#2e7a2e" font-size="9" font-weight="700">✓ 只读</text>
+<rect x="215" y="478" width="105" height="56" rx="8" ry="8" fill="#c8e6b8" stroke="#4a4a4a" stroke-width="1.5"/>
+<text x="267" y="498" text-anchor="middle" fill="#1a1a1a" font-size="11" font-weight="700">maps_direction_*</text>
+<text x="267" y="514" text-anchor="middle" fill="#3a3a3a" font-size="10">路径规划</text>
+<text x="267" y="528" text-anchor="middle" fill="#2e7a2e" font-size="9" font-weight="700">✓ 只读</text>
+<line x1="210" y1="380" x2="210" y2="410" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="190.4" y="388" width="39.2" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="210" y="398" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">绑定工具</text></g>
+<rect x="100" y="600" width="220" height="70" rx="12" ry="12" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="210.0" y="633.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">高德地图 MCP</text>
+<text x="210.0" y="655.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">stdio · free-tier ≈ 2 QPS</text>
+<line x1="210" y1="546" x2="210" y2="600" stroke="#5a5a5a" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+<g><rect x="170.9" y="566" width="78.2" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="210" y="576" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">MCP stdio</text></g>
+<rect x="920" y="410" width="105" height="56" rx="8" ry="8" fill="#c8e6b8" stroke="#4a4a4a" stroke-width="1.5"/>
+<text x="972" y="430" text-anchor="middle" fill="#1a1a1a" font-size="11" font-weight="700">sql_db_list_tables</text>
+<text x="972" y="446" text-anchor="middle" fill="#3a3a3a" font-size="10">表名列表</text>
+<text x="972" y="460" text-anchor="middle" fill="#2e7a2e" font-size="9" font-weight="700">✓ 只读</text>
+<rect x="1035" y="410" width="105" height="56" rx="8" ry="8" fill="#c8e6b8" stroke="#4a4a4a" stroke-width="1.5"/>
+<text x="1087" y="430" text-anchor="middle" fill="#1a1a1a" font-size="11" font-weight="700">sql_db_schema</text>
+<text x="1087" y="446" text-anchor="middle" fill="#3a3a3a" font-size="10">表结构</text>
+<text x="1087" y="460" text-anchor="middle" fill="#2e7a2e" font-size="9" font-weight="700">✓ 只读</text>
+<rect x="920" y="478" width="105" height="56" rx="8" ry="8" fill="#c8e6b8" stroke="#4a4a4a" stroke-width="1.5"/>
+<text x="972" y="498" text-anchor="middle" fill="#1a1a1a" font-size="11" font-weight="700">sql_db_query_checker</text>
+<text x="972" y="514" text-anchor="middle" fill="#3a3a3a" font-size="10">SQL 校验</text>
+<text x="972" y="528" text-anchor="middle" fill="#2e7a2e" font-size="9" font-weight="700">✓ 只读</text>
+<rect x="1035" y="478" width="105" height="56" rx="8" ry="8" fill="#f4c78a" stroke="#b86b1a" stroke-width="2"/>
+<text x="1087" y="498" text-anchor="middle" fill="#1a1a1a" font-size="11" font-weight="700">sql_db_query</text>
+<text x="1087" y="514" text-anchor="middle" fill="#3a3a3a" font-size="10">执行 SQL</text>
+<text x="1087" y="528" text-anchor="middle" fill="#8a3a0a" font-size="9" font-weight="700">⚠ HITL 门禁</text>
+<line x1="1030" y1="380" x2="1030" y2="410" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="1010.4" y="388" width="39.2" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="1030" y="398" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">绑定工具</text></g>
+<rect x="920" y="600" width="220" height="70" rx="12" ry="12" fill="#e8e6e3" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="1030.0" y="633.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">MySQL 数据库</text>
+<text x="1030.0" y="655.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">只读账号 · HITL 审批写操作</text>
+<line x1="1030" y1="546" x2="1030" y2="600" stroke="#5a5a5a" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+<g><rect x="1014.3" y="566" width="31.400000000000002" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="1030" y="576" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">SQL</text></g>
+<rect x="360" y="490" width="520" height="160" rx="12" ry="12" fill="#ffffff" stroke="#4a4a4a" stroke-width="1.5"/>
+<text x="620" y="514" text-anchor="middle" fill="#1a1a1a" font-size="15" font-weight="700">HITL 门禁语义</text>
+<text x="378" y="540" fill="#8a3a0a" font-size="12" font-weight="700">interrupt_on = True</text>
+<text x="518" y="540" fill="#3a3a3a" font-size="12">→ HumanInTheLoopMiddleware 拦截</text>
+<text x="378" y="562" fill="#3a3a3a" font-size="12" font-weight="700">yield hitl 事件</text>
+<text x="518" y="562" fill="#3a3a3a" font-size="12">→ task 状态 interrupted · HitlCard 弹出</text>
+<text x="378" y="584" fill="#2e7a2e" font-size="12" font-weight="700">approve</text>
+<text x="518" y="584" fill="#3a3a3a" font-size="12">放行 · 原参数执行</text>
+<text x="378" y="606" fill="#6a6a1a" font-size="12" font-weight="700">edit</text>
+<text x="518" y="606" fill="#3a3a3a" font-size="12">改参数后执行</text>
+<text x="378" y="628" fill="#8a2a2a" font-size="12" font-weight="700">reject</text>
+<text x="518" y="628" fill="#3a3a3a" font-size="12">跳过 · 返回 ToolMessage 给 LLM</text>
+<rect x="970" y="720" width="250" height="80" rx="8" ry="8" fill="#ffffff" stroke="#4a4a4a" stroke-width="1.5"/>
+<text x="985" y="742" fill="#1a1a1a" font-size="13" font-weight="700">图例</text>
+<rect x="985" y="752" width="18" height="12" rx="3" ry="3" fill="#c8e6b8" stroke="#4a4a4a" stroke-width="1"/>
+<text x="1010" y="763" fill="#3a3a3a" font-size="12">安全工具 · 直通</text>
+<rect x="985" y="772" width="18" height="12" rx="3" ry="3" fill="#f4c78a" stroke="#b86b1a" stroke-width="1.5"/>
+<text x="1010" y="783" fill="#3a3a3a" font-size="12">危险工具 · HITL</text>
+</svg>

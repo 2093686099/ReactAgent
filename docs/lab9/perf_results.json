@@ -1,0 +1,94 @@
+{
+  "serial": [
+    {
+      "query": "你好",
+      "ttft_s": 3.09,
+      "total_s": 3.24,
+      "tokens": 4,
+      "events": {
+        "token": 4,
+        "done": 1
+      }
+    },
+    {
+      "query": "请解释什么是大语言模型",
+      "ttft_s": 2.7,
+      "total_s": 8.71,
+      "tokens": 153,
+      "events": {
+        "token": 153,
+        "done": 1
+      }
+    },
+    {
+      "query": "Transformer 架构的核心组件有哪些？请详细说明。",
+      "ttft_s": 5.56,
+      "total_s": 22.67,
+      "tokens": 802,
+      "events": {
+        "token": 802,
+        "done": 1
+      }
+    },
+    {
+      "query": "帮我计算 123 乘以 456 等于多少",
+      "ttft_s": 9.61,
+      "total_s": 9.98,
+      "tokens": 11,
+      "events": {
+        "token": 11,
+        "done": 1
+      }
+    },
+    {
+      "query": "介绍一下你能做什么",
+      "ttft_s": 4.53,
+      "total_s": 9.39,
+      "tokens": 105,
+      "events": {
+        "token": 105,
+        "done": 1
+      }
+    }
+  ],
+  "parallel": {
+    "cases": [
+      {
+        "query": "你好",
+        "ttft_s": 1.9,
+        "total_s": 2.78,
+        "tokens": 22,
+        "events": {
+          "token": 22,
+          "done": 1
+        }
+      },
+      {
+        "query": "请解释什么是大语言模型",
+        "ttft_s": 6.34,
+        "total_s": 13.54,
+        "tokens": 117,
+        "events": {
+          "token": 117,
+          "done": 1
+        }
+      },
+      {
+        "query": "Transformer 架构的核心组件有哪些？请详细说明。",
+        "ttft_s": 4.96,
+        "total_s": 18.8,
+        "tokens": 651,
+        "events": {
+          "token": 651,
+          "done": 1
+        }
+      }
+    ],
+    "wall_s": 18.82,
+    "serial_wall_would_be_s": 34.62
+  },
+  "summary": {
+    "avg_total_s": 10.8,
+    "avg_ttft_s": 5.1
+  }
+}

@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1320 920" width="1320" height="920">
+<style>text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', 'Microsoft JhengHei', 'SimHei', sans-serif; }</style>
+<defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#5a5a5a"/>
+    </marker>
+    <filter id="shadow-soft">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#00000015"/>
+    </filter>
+  </defs>
+<rect width="1320" height="920" fill="#f8f6f3"/>
+<text x="660.0" y="46" text-anchor="middle" fill="#1a1a1a" font-size="22" font-weight="700">ReActAgents 系统架构</text>
+<text x="660.0" y="72" text-anchor="middle" fill="#6a6a6a" font-size="14">Next.js 前端 · FastAPI 后端 · Deep Agent 运行时 · 状态与外部服务</text>
+<text x="24" y="170" fill="#6a6a6a" font-size="14" font-weight="700">前端</text>
+<text x="24" y="186" fill="#8a8a8a" font-size="11">:3000</text>
+<text x="24" y="360" fill="#6a6a6a" font-size="14" font-weight="700">后端</text>
+<text x="24" y="376" fill="#8a8a8a" font-size="11">:8001</text>
+<text x="24" y="580" fill="#6a6a6a" font-size="14" font-weight="700">运行时</text>
+<text x="24" y="810" fill="#6a6a6a" font-size="14" font-weight="700">状态</text>
+<text x="24" y="826" fill="#8a8a8a" font-size="11">外部</text>
+<rect x="60" y="470" width="900" height="220" rx="16" ry="16" fill="none" stroke="#4a4a4a" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="80" y="496" fill="#1a1a1a" font-size="15" font-weight="700">Deep Agent 运行时</text>
+<text x="230" y="496" fill="#6a6a6a" font-size="12">deepagents.create_deep_agent · LangGraph 1.1.6</text>
+<rect x="80" y="110" width="240" height="120" rx="12" ry="12" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="200.0" y="152.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">ChatPanel</text>
+<text x="200.0" y="174.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">单页编排</text>
+<text x="200.0" y="190.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">MessageBubble · ToolPill</text>
+<text x="200.0" y="206.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">HitlCard</text>
+<rect x="380" y="110" width="240" height="120" rx="12" ry="12" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="500.0" y="152.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">Zustand Stores</text>
+<text x="500.0" y="174.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">chat · session · ui</text>
+<text x="500.0" y="190.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">system-meta</text>
+<text x="500.0" y="206.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">localStorage 持久化</text>
+<rect x="680" y="110" width="240" height="120" rx="12" ry="12" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="800.0" y="160.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">use-sse Hook</text>
+<text x="800.0" y="182.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">EventSource 重连</text>
+<text x="800.0" y="198.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">Last-Event-ID 续传</text>
+<rect x="980" y="110" width="240" height="120" rx="12" ry="12" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="1100.0" y="160.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">RAF 批渲染</text>
+<text x="1100.0" y="182.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">DOM 直写 · 跳过 React</text>
+<text x="1100.0" y="198.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">60fps 流式字符</text>
+<rect x="80" y="310" width="240" height="100" rx="12" ry="12" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="200.0" y="350.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">api/</text>
+<text x="200.0" y="372.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">chat · sessions · memory</text>
+<text x="200.0" y="388.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">SSE · Depends 注入</text>
+<rect x="380" y="310" width="240" height="100" rx="12" ry="12" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="500.0" y="350.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">core/</text>
+<text x="500.0" y="372.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">agent · streaming · hitl</text>
+<text x="500.0" y="388.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">tools · exceptions</text>
+<rect x="680" y="310" width="240" height="100" rx="12" ry="12" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="800.0" y="350.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">services/</text>
+<text x="800.0" y="372.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">TaskService · SessionService</text>
+<text x="800.0" y="388.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">MemoryService · lazy singleton</text>
+<rect x="980" y="310" width="240" height="100" rx="12" ry="12" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="1100.0" y="350.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">infra/</text>
+<text x="1100.0" y="372.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">database · redis · llm</text>
+<text x="1100.0" y="388.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">task_bus 事件流</text>
+<rect x="80" y="510" width="200" height="140" rx="12" ry="12" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="180.0" y="570.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">Main Agent</text>
+<text x="180.0" y="592.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">工具分级调度</text>
+<text x="180.0" y="608.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">Todo 规划 · /tmp 文件</text>
+<rect x="300" y="510" width="200" height="140" rx="12" ry="12" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="400.0" y="570.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">Summarization MW</text>
+<text x="400.0" y="592.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">trigger tokens = 3000</text>
+<text x="400.0" y="608.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">keep messages = 20</text>
+<rect x="520" y="510" width="200" height="140" rx="12" ry="12" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="620.0" y="570.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">HITL MW</text>
+<text x="620.0" y="592.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">interrupt_on 白名单</text>
+<text x="620.0" y="608.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">approve · edit · reject</text>
+<rect x="740" y="510" width="200" height="140" rx="12" ry="12" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="840.0" y="570.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">SubAgents</text>
+<text x="840.0" y="592.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">researcher (高德)</text>
+<text x="840.0" y="608.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">data_analyst (MySQL)</text>
+<rect x="1000" y="510" width="240" height="140" rx="12" ry="12" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="1120.0" y="570.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">LLM Provider</text>
+<text x="1120.0" y="592.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">tencent / modelscope</text>
+<text x="1120.0" y="608.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">qwen / openai / ollama</text>
+<rect x="80" y="760" width="240" height="110" rx="12" ry="12" fill="#e8e6e3" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="200.0" y="805.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">PostgreSQL 16</text>
+<text x="200.0" y="827.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">AsyncPostgresSaver</text>
+<text x="200.0" y="843.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">AsyncPostgresStore</text>
+<rect x="380" y="760" width="240" height="110" rx="12" ry="12" fill="#e8e6e3" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="500.0" y="805.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">Redis 7</text>
+<text x="500.0" y="827.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">会话缓存</text>
+<text x="500.0" y="843.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">task 事件 Streams</text>
+<rect x="680" y="760" width="240" height="110" rx="12" ry="12" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="800.0" y="805.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">高德地图 MCP</text>
+<text x="800.0" y="827.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">stdio 协议</text>
+<text x="800.0" y="843.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">researcher 调用</text>
+<rect x="980" y="760" width="240" height="110" rx="12" ry="12" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="2" filter="url(#shadow-soft)"/>
+<text x="1100.0" y="805.0" text-anchor="middle" fill="#1a1a1a" font-size="16" font-weight="600">RAG Service</text>
+<text x="1100.0" y="827.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">:8765 graph2</text>
+<text x="1100.0" y="843.0" text-anchor="middle" fill="#3a3a3a" font-size="13" font-weight="400">Adaptive RAG</text>
+<line x1="200" y1="230" x2="200" y2="310" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="141.39999999999998" y="260.0" width="117.20000000000002" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="200" y="270.0" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">POST /api/chat</text></g>
+<path d="M 800 230 L 800 270 L 260 270 L 260 310" fill="none" stroke="#5a5a5a" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+<g><rect x="483.1" y="252" width="93.80000000000001" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="530" y="262" text-anchor="middle" fill="#3a3a3a" font-size="12" font-weight="500">SSE /events</text></g>
+<line x1="320" y1="360.0" x2="380" y2="360.0" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="620" y1="360.0" x2="680" y2="360.0" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="920" y1="360.0" x2="980" y2="360.0" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="500" y1="410" x2="500" y2="470" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="421.9" y="430.0" width="156.20000000000002" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="500" y="440.0" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">create_deep_agent()</text></g>
+<line x1="280" y1="580.0" x2="300" y2="580.0" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="500" y1="580.0" x2="520" y2="580.0" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="720" y1="580.0" x2="740" y2="580.0" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="940" y1="580.0" x2="1000" y2="580.0" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="942.6" y="562.0" width="54.800000000000004" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="970.0" y="572.0" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">invoke</text></g>
+<line x1="200" y1="690" x2="200" y2="760" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="125.8" y="715.0" width="148.4" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="200" y="725.0" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">checkpoint · store</text></g>
+<line x1="500" y1="690" x2="500" y2="760" stroke="#5a5a5a" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+<g><rect x="449.2" y="715.0" width="101.60000000000001" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="500" y="725.0" text-anchor="middle" fill="#3a3a3a" font-size="12" font-weight="500">XADD / XREAD</text></g>
+<line x1="800" y1="690" x2="800" y2="760" stroke="#5a5a5a" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+<g><rect x="760.9" y="715.0" width="78.2" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="800" y="725.0" text-anchor="middle" fill="#3a3a3a" font-size="12" font-weight="500">MCP stdio</text></g>
+<path d="M 940 690 L 940 720 L 1100 720 L 1100 760" fill="none" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<g><rect x="938.0" y="702" width="164.0" height="16" fill="#f8f6f3" fill-opacity="0.95" rx="3" ry="3"/><text x="1020" y="712" text-anchor="middle" fill="#1a1a1a" font-size="12" font-weight="500">query_knowledge_base</text></g>
+<rect x="1024" y="30" width="272" height="58" rx="8" ry="8" fill="#ffffff" stroke="#4a4a4a" stroke-width="1.5"/>
+<line x1="1038" y1="52" x2="1074" y2="52" stroke="#5a5a5a" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="1084" y="56" fill="#3a3a3a" font-size="12">同步调用</text>
+<line x1="1038" y1="74" x2="1074" y2="74" stroke="#5a5a5a" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+<text x="1084" y="78" fill="#3a3a3a" font-size="12">事件 / 流</text>
+<rect x="1024" y="830" width="272" height="70" rx="8" ry="8" fill="#ffffff" stroke="#4a4a4a" stroke-width="1.5"/>
+<text x="1038" y="852" fill="#1a1a1a" font-size="13" font-weight="700">节点类别</text>
+<rect x="1038" y="862" width="14" height="12" rx="3" ry="3" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1"/>
+<text x="1058" y="873" fill="#3a3a3a" font-size="12">前端</text>
+<rect x="1168" y="862" width="14" height="12" rx="3" ry="3" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="1"/>
+<text x="1188" y="873" fill="#3a3a3a" font-size="12">后端 / 外部</text>
+<rect x="1038" y="882" width="14" height="12" rx="3" ry="3" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1"/>
+<text x="1058" y="893" fill="#3a3a3a" font-size="12">Agent</text>
+<rect x="1168" y="882" width="14" height="12" rx="3" ry="3" fill="#e8e6e3" stroke="#4a4a4a" stroke-width="1"/>
+<text x="1188" y="893" fill="#3a3a3a" font-size="12">持久化</text>
+</svg>
