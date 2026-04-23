@@ -45,8 +45,16 @@ Requirements for Next.js 前端。Each maps to roadmap phases.
 
 ### Resilience
 
-- [ ] **RESIL-01**: SSE 断线后自动重连（使用 from_id / Last-Event-ID 续传）
-- [ ] **RESIL-02**: HITL 审批状态持久化（页面刷新后可从 task meta 恢复）
+- [x] **RESIL-01**: SSE 断线后自动重连（使用 from_id / Last-Event-ID 续传）
+- [x] **RESIL-02**: HITL 审批状态持久化（页面刷新后可从 task meta 恢复）
+
+### RAG Source Panel + Observability
+
+- [ ] **RAG-01**: 后端 middleware 从 `ToolMessage.artifact` 提取 sources/route/error_type，并通过新的 SSE `source` 事件下发
+- [ ] **RAG-02**: 前端新增 `SourcesSegment` 类型和 `<SourceCards>` 组件，正常态展示最多 3 条来源卡片（源文件名 + 类别 + 180 字 snippet）
+- [ ] **RAG-03**: `KB_EMPTY` / `KB_ERROR` 以区别于正常回答的视觉状态展示，避免误导用户把 fallback 或失败当作 grounded 回答
+- [ ] **RAG-04**: 后端为每次 `query_knowledge_base` 调用结构化记录 `route` / `error_type` / `document_count` / `call_id` / `ok`
+- [ ] **RAG-05**: `GET /api/sessions/{id}/messages` 可从 checkpoint 重建 `SourcesSegment`，切会话或刷新后来源卡片仍保留
 
 ## Future Requirements
 
@@ -93,14 +101,19 @@ Deferred to v3.0+。Tracked but not in current roadmap.
 | SESS-04 | Phase 10 | Pending |
 | TODO-01 | Phase 11 | Pending |
 | TODO-02 | Phase 11 | Pending |
-| RESIL-01 | Phase 12 | Pending |
-| RESIL-02 | Phase 12 | Pending |
+| RESIL-01 | Phase 12 | Complete |
+| RESIL-02 | Phase 12 | Complete |
+| RAG-01 | Phase 13 | Pending |
+| RAG-02 | Phase 13 | Pending |
+| RAG-03 | Phase 13 | Pending |
+| RAG-04 | Phase 13 | Pending |
+| RAG-05 | Phase 13 | Pending |
 
 **Coverage:**
-- v2.0 requirements: 22 total
-- Mapped to phases: 22
+- v2.0 requirements: 27 total
+- Mapped to phases: 27
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-12*
-*Last updated: 2026-04-12 after roadmap creation*
+*Last updated: 2026-04-22 after Phase 12 completion and Phase 13 context lock*
